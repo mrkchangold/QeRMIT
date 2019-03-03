@@ -813,6 +813,7 @@ def main():
                              "be truncated to this length.")
     parser.add_argument("--do_train", action='store_true', help="Whether to run training.")
     parser.add_argument("--do_predict", action='store_true', help="Whether to run eval on the dev set.")
+    parser.add_argument("--freeze_BERT_embed", action='store_true', help="Whether to freeze BERT embedding layers.") # added_flag
     parser.add_argument("--train_batch_size", default=32, type=int, help="Total batch size for training.")
     parser.add_argument("--predict_batch_size", default=8, type=int, help="Total batch size for predictions.")
     parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
@@ -923,7 +924,10 @@ def main():
 
     # Prepare model
     model = BertForQuestionAnswering.from_pretrained(args.bert_model,
-                cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+
+    if args.freeze_BERT_embed: # added_flag FREEZE!
+        model.bert.embeddings.requires_grad = False # added_flag
 
     if args.fp16:
         model.half()
