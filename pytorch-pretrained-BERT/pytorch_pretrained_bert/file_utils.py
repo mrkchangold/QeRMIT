@@ -27,8 +27,8 @@ except ImportError:
 
 try:
     from pathlib import Path
-    PYTORCH_PRETRAINED_BERT_CACHE = Path(os.getenv('PYTORCH_PRETRAINED_BERT_CACHE',
-                                                   Path.home() / '.pytorch_pretrained_bert'))
+    PYTORCH_PRETRAINED_BERT_CACHE = str(Path(os.getenv('PYTORCH_PRETRAINED_BERT_CACHE',
+                                                   Path.home() / '.pytorch_pretrained_bert')))
 except AttributeError:
     PYTORCH_PRETRAINED_BERT_CACHE = os.getenv('PYTORCH_PRETRAINED_BERT_CACHE',
                                               os.path.join(os.path.expanduser("~"), '.pytorch_pretrained_bert'))
