@@ -46,6 +46,8 @@ if sys.version_info[0] == 2:
 else:
     import pickle
 
+import csv # added_flag
+
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
@@ -444,7 +446,7 @@ RawResult = collections.namedtuple("RawResult",
 def write_predictions(all_examples, all_features, all_results, n_best_size,
                       max_answer_length, do_lower_case, output_prediction_file,
                       output_nbest_file, output_null_log_odds_file, verbose_logging,
-                      version_2_with_negative, null_score_diff_threshold):
+                      version_2_with_negative, null_score_diff_threshold, output_dir):
     """Write final predictions to the json file and log-odds of null if needed."""
     logger.info("Writing predictions to: %s" % (output_prediction_file))
     logger.info("Writing nbest to: %s" % (output_nbest_file))
@@ -624,6 +626,14 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
 
     with open(output_prediction_file, "w") as writer:
         writer.write(json.dumps(all_predictions, indent=4) + "\n")
+
+    # Write csv submission file 
+    sub_path = os.path.join(output_dir, 'dev_submission.csv') # added_flag, HARDCODED 'dev'
+    with open(sub_path, 'w') as csv_fh: # added_flag
+        csv_writer = csv.writer(csv_fh, delimiter=',') # added_flag
+        csv_writer.writerow(['Id', 'Predicted']) # added_flag
+        for qas_id in sorted(all_predictions): # added_flag
+            csv_writer.writerow([qas_id, all_predictions[qas_id]]) # added_flag
 
     with open(output_nbest_file, "w") as writer:
         writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
@@ -1081,7 +1091,7 @@ def main():
                           args.n_best_size, args.max_answer_length,
                           args.do_lower_case, output_prediction_file,
                           output_nbest_file, output_null_log_odds_file, args.verbose_logging,
-                          args.version_2_with_negative, args.null_score_diff_threshold)
+                          args.version_2_with_negative, args.null_score_diff_threshold, args.output_dir) #added_flag 'args.output_dir'
 
 
 if __name__ == "__main__":
