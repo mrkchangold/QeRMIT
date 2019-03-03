@@ -33,6 +33,7 @@ from torch import nn
 from torch.nn import CrossEntropyLoss
 
 from .file_utils import cached_path
+from cnn import CNN # added_flag
 
 logger = logging.getLogger(__name__)
 
@@ -1173,11 +1174,35 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         self.bert = BertModel(config)
         # TODO check with Google if it's normal there is no dropout on the token classifier of SQuAD in the TF version
         # self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.qa_outputs = nn.Linear(config.hidden_size, 2)
+        self.cnn_encoder = CNN(e_T = config.hidden_size)
+        
+        self.qa_outputs = nn.Linear(config.hidden_size, 2) # TODO: This needs to get edited
+        
         self.apply(self.init_bert_weights)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, start_positions=None, end_positions=None):
+    def forward(self, input_ids, token_type_ids=None, token_type_ids_flipped=None, query_length=None, attention_mask=None, start_positions=None, end_positions=None, freeze_bert=False): # added flag token_type_ids_flipped=None, query_length=None
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
+
+        """
+        Idea is the encode the question into a vector then concatenante it with the output of bert for context words.
+        1. prep = create a sparse matrix from sequence output by using token_type_id_flipped (1 for q, 0 for c). This is similar to padding
+        2. clip the sparse matrix and apply cnn (Probably don't need query_length in hindsight...)
+
+        """
+        # create sparse matrix
+        if token_type_ids_flipped is not None and query_length is not None:
+            sparse_question = self.sparse(sequence_output, token_type_ids_flipped, query_length)
+        
+        # create cnn representation
+
+        # freeze layers if necessary.
+        if freeze_bert == True:
+            None
+
+        # bring up character embed
+
+        # concat vectors
+
         logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
         start_logits = start_logits.squeeze(-1)
@@ -1201,3 +1226,25 @@ class BertForQuestionAnswering(BertPreTrainedModel):
             return total_loss
         else:
             return start_logits, end_logits
+    
+    def sparse(self, sequence_output, token_type_ids_flipped, query_length):
+
+        print(sequence_output.size())
+        print(token_type_ids_flipped.size())
+        print(query_length)
+        return None
+        # # We create a 3D attention mask from a 2D tensor mask.
+        # # Sizes are [batch_size, 1, 1, to_seq_length]
+        # # So we can broadcast to [batch_size, num_heads, from_seq_length, to_seq_length]
+        # # this attention mask is more simple than the triangular masking of causal attention
+        # # used in OpenAI GPT, we just need to prepare the broadcast dimension here.
+        # extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
+
+        # # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
+        # # masked positions, this operation will create a tensor which is 0.0 for
+        # # positions we want to attend and -10000.0 for masked positions.
+        # # Since we are adding it to the raw scores before the softmax, this is
+        # # effectively the same as removing these entirely.
+        # extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility
+        # extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
+

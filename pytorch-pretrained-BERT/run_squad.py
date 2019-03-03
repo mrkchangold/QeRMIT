@@ -107,6 +107,8 @@ class InputFeatures(object):
                  input_ids,
                  input_mask,
                  segment_ids,
+                 segment_ids_flipped, # added_flag
+                 query_length, # added_flag
                  start_position=None,
                  end_position=None,
                  is_impossible=None):
@@ -119,6 +121,8 @@ class InputFeatures(object):
         self.input_ids = input_ids
         self.input_mask = input_mask
         self.segment_ids = segment_ids
+        self.segment_ids_flipped = segment_ids_flipped # added_flag
+        self.query_length = query_length # added_flag
         self.start_position = start_position
         self.end_position = end_position
         self.is_impossible = is_impossible
@@ -264,13 +268,18 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
             token_to_orig_map = {}
             token_is_max_context = {}
             segment_ids = []
+            segment_ids_flipped = [] # added_flag
             tokens.append("[CLS]")
             segment_ids.append(0)
+            segment_ids_flipped.append(1)
             for token in query_tokens:
                 tokens.append(token)
                 segment_ids.append(0)
+                segment_ids_flipped.append(1) # added_flag
+
             tokens.append("[SEP]")
-            segment_ids.append(0)
+            segment_ids.append(0) 
+            segment_ids_flipped.append(1) # added_flag
 
             for i in range(doc_span.length):
                 split_token_index = doc_span.start + i
@@ -281,8 +290,10 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
                 token_is_max_context[len(tokens)] = is_max_context
                 tokens.append(all_doc_tokens[split_token_index])
                 segment_ids.append(1)
+                segment_ids_flipped.append(0) # added_flag
             tokens.append("[SEP]")
             segment_ids.append(1)
+            segment_ids_flipped.append(0) # added_flag
 
             input_ids = tokenizer.convert_tokens_to_ids(tokens)
 
@@ -295,10 +306,12 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
                 input_ids.append(0)
                 input_mask.append(0)
                 segment_ids.append(0)
+                segment_ids_flipped.append(0) # added_flag note 0 here to ignore these
 
             assert len(input_ids) == max_seq_length
             assert len(input_mask) == max_seq_length
             assert len(segment_ids) == max_seq_length
+            assert len(segment_ids_flipped) == max_seq_length
 
             start_position = None
             end_position = None
@@ -357,6 +370,8 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
                     input_ids=input_ids,
                     input_mask=input_mask,
                     segment_ids=segment_ids,
+                    segment_ids_flipped=segment_ids_flipped, # added_flag
+                    query_length = len(query_tokens) + 2, # added_flag
                     start_position=start_position,
                     end_position=end_position,
                     is_impossible=example.is_impossible))
@@ -985,9 +1000,11 @@ def main():
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
+        all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long) # added_flag
+        all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long) # added_flag
         all_start_positions = torch.tensor([f.start_position for f in train_features], dtype=torch.long)
         all_end_positions = torch.tensor([f.end_position for f in train_features], dtype=torch.long)
-        train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
+        train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_segment_ids_flipped, all_query_length, # added_flag all_segment_ids_flipped, all_query_length
                                    all_start_positions, all_end_positions)
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_data)
@@ -1000,8 +1017,8 @@ def main():
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 if n_gpu == 1:
                     batch = tuple(t.to(device) for t in batch) # multi-gpu does scattering it-self
-                input_ids, input_mask, segment_ids, start_positions, end_positions = batch
-                loss = model(input_ids, segment_ids, input_mask, start_positions, end_positions)
+                input_ids, input_mask, segment_ids, segment_ids_flipped, query_length, start_positions, end_positions = batch # added_flag = segment_ids_flipped
+                loss = model(input_ids, segment_ids, segment_ids_flipped, query_length, input_mask, start_positions, end_positions, freeze_bert=True) # added_flag = segment_ids_flipped
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
                 if args.gradient_accumulation_steps > 1:
@@ -1059,8 +1076,10 @@ def main():
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
+        all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long) # added_flag
+        all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long) # added_flag
         all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
-        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
+        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_segment_ids_flipped, all_query_length, all_example_index) # added_flag all_segment_ids_flipped, all_query_length
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
         eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size)
@@ -1068,14 +1087,16 @@ def main():
         model.eval()
         all_results = []
         logger.info("Start evaluating")
-        for input_ids, input_mask, segment_ids, example_indices in tqdm(eval_dataloader, desc="Evaluating"):
+        for input_ids, input_mask, segment_ids, segment_ids_flipped, query_length, example_indices in tqdm(eval_dataloader, desc="Evaluating"): # added_flag segment_ids_flipped, query_length
             if len(all_results) % 1000 == 0:
                 logger.info("Processing example: %d" % (len(all_results)))
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
             segment_ids = segment_ids.to(device)
+            segment_ids_flipped = segment_ids_flipped.to(device) # added_flag
+            query_length = query_length.to(device) # added_flag
             with torch.no_grad():
-                batch_start_logits, batch_end_logits = model(input_ids, segment_ids, input_mask)
+                batch_start_logits, batch_end_logits = model(input_ids, segment_ids, segment_ids_flipped, query_length, input_mask) # added_flag
             for i, example_index in enumerate(example_indices):
                 start_logits = batch_start_logits[i].detach().cpu().tolist()
                 end_logits = batch_end_logits[i].detach().cpu().tolist()
