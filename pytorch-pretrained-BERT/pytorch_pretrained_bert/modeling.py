@@ -1212,6 +1212,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # idea is that a dot product between two vectors can accurately represent similarity. 
         # Then feedfwd layer retains the information from the original sequence output
         sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
+        print("seq output")
+        print(sequence_output.is_leaf)
         # print(sequence_output.is_contiguous()) # True
         # sequence_output = sequence_output.contiguous()
         # TODO: bring up character embed (SKIPPED FOR NOW)
@@ -1243,13 +1245,17 @@ class BertForQuestionAnswering(BertPreTrainedModel):
             return start_logits, end_logits
     
     def sparse(self, sequence_output, token_type_ids_flipped, query_length, crop = False):
+        print("sparse")
         batch, seq_len, hidden_dim = sequence_output.size()
         batch, seq_len = token_type_ids_flipped.size()
         token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
         # print(token_type_ids_flipped.type()) # long tensor
         # print(sequence_output.type()) # half tensor
+        print(token_type_ids_flipped.is_leaf)
         token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.float16)
+        print(token_type_ids_flipped.is_leaf)
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped)
+        print(sequence_output_masked.is_leaf)
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
         return sequence_output_masked 
