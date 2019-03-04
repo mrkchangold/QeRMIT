@@ -1277,8 +1277,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
 
-        sequence_output_masked.detach()
-        sequence_output_masked = sequence_output_masked.requires_grad_()
+        sequence_output_masked = sequence_output_masked.detach()
+        sequence_output_masked.requires_grad_()
         print(sequence_output_masked.is_leaf) 
         print(sequence_output_masked.requires_grad) 
 
