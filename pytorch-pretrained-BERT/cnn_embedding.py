@@ -111,17 +111,20 @@ class QEmbeddings(nn.Module):
     def forward(self, input):
         """
         """
-        # print("INSIDE QEMBEDDING")
+        print("INSIDE QEMBEDDING")
         # batch, max_q_length, e_hidden = input.size()
         output = input.permute(0,2,1).contiguous() #batch x e_hidden x max_q_length
+        print(output.size())
         # print(output.grad) # false...
         output = self.cnn(output) #input: batch x e_hidden x max_q_length
+        print(output.size())
         # print(output.grad) # true
         output = output.permute(0,2,1) #input: batch x e_hidden x max_q_length
+        print(output.size())
         # print(output.grad) # false
         output = self.hwy(output) #input: batch x max_q_length x e_hidden
         # print(output.grad)
         # output = output.view(sentence_length, batch_size, -1) # This seems unnecessary
         # print("OUTPUT SHAPE")
-        # print(output.size()) #assuming batch x 1 x e_hidden
+        print(output.size()) #assuming batch x 1 x e_hidden
         return output
