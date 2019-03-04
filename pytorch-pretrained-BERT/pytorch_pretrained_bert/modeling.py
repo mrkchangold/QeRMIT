@@ -1204,7 +1204,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print(question_output_masked.is_leaf) # true
         print(question_output_masked.requires_grad) # true
 
-        question_output_masked = torch.tensor(question_output_masked.data, dtype = torch.half, device=input_ids.device)
+        # question_output_masked = torch.tensor(question_output_masked.data, dtype = torch.half, device=input_ids.device)
         # question_output_masked.requires_grad_(True)
         # print(question_output_masked.is_leaf)
         # print(question_output_masked.requires_grad)
@@ -1268,16 +1268,20 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # print(sequence_output.is_leaf) # false
         # print(sequence_output.requires_grad) # true
         # print("sparse")
+        print(token_type_ids_flipped)
         batch, seq_len, hidden_dim = sequence_output.size() 
         batch, seq_len = token_type_ids_flipped.size()
         token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
+        print(token_type_ids_flipped)
         token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.half) # need to convert to half tensor
+        print(token_type_ids_flipped)
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
+        print(sequence_output_masked)
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
-
-        sequence_output_masked = sequence_output_masked.detach()
-        sequence_output_masked.requires_grad_()
+        print(sequence_output_masked)
+        # sequence_output_masked = sequence_output_masked.detach()
+        # sequence_output_masked.requires_grad_()
         # print(sequence_output_masked.is_leaf) 
         # print(sequence_output_masked.requires_grad) 
         return sequence_output_masked 
