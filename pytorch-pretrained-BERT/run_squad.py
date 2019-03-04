@@ -919,10 +919,6 @@ def main():
         if args.local_rank != -1:
             num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
 
-    # print(PYTORCH_PRETRAINED_BERT_CACHE)
-    # print(os.path.join(PYTORCH_PRETRAINED_BERT_CACHE, 'distributed_{}'.format(args.local_rank)))
-    # print(str(os.path.join(PYTORCH_PRETRAINED_BERT_CACHE, 'distributed_{}'.format(args.local_rank))))
-
     # Prepare model
     model = BertForQuestionAnswering.from_pretrained(args.bert_model,
             cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
@@ -980,16 +976,20 @@ def main():
 
     global_step = 0
     if args.do_train:
-        if args.new_model: # added_flag because the string concetation created a strange file name format.
-            cached_train_features_file = args.train_file
-        else:
-            cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
-                list(filter(None, args.bert_model.split('/'))).pop(), str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
+        # if args.new_model: # added_flag because the string concetation created a strange file name format.
+        #     cached_train_features_file = args.train_file
+        # else:
+        cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
+            list(filter(None, args.bert_model.split('/'))).pop(), str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
+        print("CACHED")
+        print(cached_train_features_file)
         train_features = None
         try:
+            print("try")
             with open(cached_train_features_file, "rb") as reader:
                 train_features = pickle.load(reader)
         except:
+            print("except")
             train_features = convert_examples_to_features(
                 examples=train_examples,
                 tokenizer=tokenizer,
