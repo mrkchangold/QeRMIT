@@ -1186,6 +1186,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # apply pretrained BERT layer
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
         batch, seq_len, hidden_dim = sequence_output.size()
+        sequence_output.requires_grad(False)
         """
         Idea is the encode the question into a vector then concatenante it with the output of bert for context words.
         1. prep = create a sparse matrix from sequence output by using token_type_id_flipped (1 for q, 0 for c). This is similar to padding
@@ -1205,10 +1206,21 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print(question_output_masked.is_leaf) # false
         batch, max_query_len, hidden_dim = question_output_masked.size()
         
+        print(question_output_masked.is_leaf)
+        print(question_output_masked.requires_grad)
+
+        question_output_masked.requires_grad(False)
+        print(question_output_masked.is_leaf)
+        print(question_output_masked.requires_grad)
+
         # create cnn representation of question
         q_representation = self.QEmbedder(input = question_output_masked) # added_flag
         print("q_representation output") # dbg_flag
         print(q_representation.is_leaf) #  false
+        print(q_representation.requires_grad)
+        q_representation.requires_grad()
+        print(q_representation.is_leaf) #  
+        print(q_representation.requires_grad)
 
         # batch, hidden_dim = q_representation.size()
         q_representation = q_representation.expand(-1, seq_len, -1)
@@ -1255,8 +1267,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
     
     def sparse(self, sequence_output, token_type_ids_flipped, query_length, crop = False):
         print("sequence_output")
-        print(sequence_output.is_leaf)
-        print(sequence_output.requires_grad)
+        print(sequence_output.is_leaf) # false
+        print(sequence_output.requires_grad) # true
         print("sparse")
         batch, seq_len, hidden_dim = sequence_output.size() 
         batch, seq_len = token_type_ids_flipped.size()
@@ -1266,13 +1278,13 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print(token_type_ids_flipped.is_leaf) #true
         token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.float16)
         print(token_type_ids_flipped.is_leaf) #true
-        print(token_type_ids_flipped.requires_grad)
-        sequence_output_masked = sequence_output.mul(token_type_ids_flipped).requires_grad_()
-        print(sequence_output_masked.is_leaf) #
-        print(sequence_output_masked.requires_grad)
-        sequence_output_masked = sequence_output_masked.requires_grad_()
+        print(token_type_ids_flipped.requires_grad) #false
+        sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
         print(sequence_output_masked.is_leaf) #false
-        print(sequence_output_masked.requires_grad)
+        print(sequence_output_masked.requires_grad) #true
+        # sequence_output_masked = sequence_output_masked.requires_grad_()
+        # print(sequence_output_masked.is_leaf) #false
+        # print(sequence_output_masked.requires_grad) #true
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
         print(sequence_output_masked.is_leaf) #false
