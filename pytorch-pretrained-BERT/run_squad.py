@@ -983,6 +983,7 @@ def main():
             cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
                 'bert-large-uncased', str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
             # cached_train_features_file = args.train_file
+            print(train_examples)
             train_examples = args.train_file
         else:
             cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
