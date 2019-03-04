@@ -814,6 +814,7 @@ def main():
     parser.add_argument("--do_train", action='store_true', help="Whether to run training.")
     parser.add_argument("--do_predict", action='store_true', help="Whether to run eval on the dev set.")
     parser.add_argument("--freeze_BERT_embed", action='store_true', help="Whether to freeze BERT embedding layers.") # added_flag
+    parser.add_argument("--new_model", action='store_true', help="If we are loading a new model.") # added_flag
     parser.add_argument("--train_batch_size", default=32, type=int, help="Total batch size for training.")
     parser.add_argument("--predict_batch_size", default=8, type=int, help="Total batch size for predictions.")
     parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
@@ -979,8 +980,11 @@ def main():
 
     global_step = 0
     if args.do_train:
-        cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
-            list(filter(None, args.bert_model.split('/'))).pop(), str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
+        if args.new_model: # added_flag because the string concetation created a strange file name format.
+            cached_train_features_file = args.train_file
+        else:
+            cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
+                list(filter(None, args.bert_model.split('/'))).pop(), str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
         train_features = None
         try:
             with open(cached_train_features_file, "rb") as reader:
