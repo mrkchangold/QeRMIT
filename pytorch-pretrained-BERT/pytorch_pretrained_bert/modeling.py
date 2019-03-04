@@ -1212,17 +1212,12 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # 3. create cnn representation of question
         q_representation = self.QEmbedder(input = question_output_masked) # added_flag
         print("q_representation output") # dbg_flag
-        print(q_representation.is_leaf) #  false <- still wasn't fixed with the detach in sparse function.
-        print(q_representation.requires_grad) #  true
-        # q_representation.requires_grad_(True)
-        # print(q_representation.is_leaf) #  
-        # print(q_representation.requires_grad)
+        print(q_representation.is_contiguous()) #  
 
         # batch, hidden_dim = q_representation.size()
         q_representation = q_representation.expand(-1, seq_len, -1)
         print("q_representation output") # dbg_flag
-        print(q_representation.is_leaf) # false
-        print(q_representation.requires_grad) #  true
+        print(q_representation.is_contiguous) # false
         
         # 4. create a residual connection
         # new representation is a residual connection of the element-wise multiplication
@@ -1230,7 +1225,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # Then feedfwd layer retains the information from the original sequence output
         sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
         print("seq output") # dbg_flag
-        print(sequence_output.is_leaf) # false
+        print(sequence_output.is_contiguous) 
 
 
         # print(sequence_output.is_contiguous()) # True

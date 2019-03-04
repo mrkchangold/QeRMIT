@@ -112,10 +112,9 @@ class QEmbeddings(nn.Module):
         """
         """
         print("INSIDE QEMBEDDING")
-        print(input.is_leaf) # TRUE
         # batch, max_q_length, e_hidden = input.size()
-        output = input.permute(0,2,1) #batch x e_hidden x max_q_length
-        print(output.is_contiguous())
+        output = input.permute(0,2,1).contiguous() #batch x e_hidden x max_q_length
+        print(output.is_contiguous()) # false...
         output = self.cnn(output) #input: batch x e_hidden x max_q_length
         print(output.is_contiguous()) # true
         output = output.permute(0,2,1) #input: batch x e_hidden x max_q_length
