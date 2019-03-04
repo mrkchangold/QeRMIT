@@ -1202,18 +1202,18 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # create sparse matrix of questions
         question_output_masked = self.sparse(sequence_output, token_type_ids_flipped.contiguous(), query_length, crop = True) # added_flag
         print("question_output_masked output") # dbg_flag
-        print(question_output_masked.is_leaf) # 
+        print(question_output_masked.is_leaf) # false
         batch, max_query_len, hidden_dim = question_output_masked.size()
         
         # create cnn representation of question
         q_representation = self.QEmbedder(input = question_output_masked) # added_flag
         print("q_representation output") # dbg_flag
-        print(q_representation.is_leaf) # 
+        print(q_representation.is_leaf) #  false
 
         # batch, hidden_dim = q_representation.size()
         q_representation = q_representation.expand(-1, seq_len, -1)
         print("q_representation output") # dbg_flag
-        print(q_representation.is_leaf) # 
+        print(q_representation.is_leaf) # false
 
         # new representation is a residual connection of the element-wise multiplication
         # idea is that a dot product between two vectors can accurately represent similarity. 
@@ -1263,9 +1263,9 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print(token_type_ids_flipped.is_leaf) #true
         token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.float16)
         print(token_type_ids_flipped.is_leaf) #true
-        sequence_output_masked = sequence_output.mul(token_type_ids_flipped)
+        sequence_output_masked = sequence_output.mul(token_type_ids_flipped).requires_grad_()
         print(sequence_output_masked.is_leaf) #false
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
-        print(sequence_output_masked.is_leaf)
+        print(sequence_output_masked.is_leaf) #false
         return sequence_output_masked 
