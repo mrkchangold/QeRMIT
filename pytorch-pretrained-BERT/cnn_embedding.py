@@ -112,7 +112,7 @@ class QEmbeddings(nn.Module):
         """
         """
         print("INSIDE QEMBEDDING")
-        print(input.is_leaf)
+        print(input.is_leaf) # TRUE
         # batch, max_q_length, e_hidden = input.size()
         output = input.permute(0,2,1) #batch x e_hidden x max_q_length
         print(output.is_leaf)
