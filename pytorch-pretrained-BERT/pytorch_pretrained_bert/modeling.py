@@ -1267,7 +1267,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # print("sequence_output")
         # print(sequence_output.is_leaf) # false
         # print(sequence_output.requires_grad) # true
-        # print("sparse")
+        print("sparse")
         print(token_type_ids_flipped.is_contiguous())
         batch, seq_len, hidden_dim = sequence_output.size() 
         batch, seq_len = token_type_ids_flipped.size()
@@ -1278,7 +1278,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
         print(sequence_output_masked.is_contiguous())
         if crop:
-            sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
+            sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:].contiguous()
         print(sequence_output_masked.is_contiguous())
         # sequence_output_masked = sequence_output_masked.detach()
         # sequence_output_masked.requires_grad_()
