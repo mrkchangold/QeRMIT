@@ -1021,10 +1021,10 @@ def main():
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
-        all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long, requires_grad = False) # added_flag
+        all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long) # added_flag
         print("all_segment_ids_flipped") # dbg_flag
         print(all_segment_ids_flipped.is_leaf) # 
-        all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long, requires_grad = False) # added_flag
+        all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long) # added_flag
         all_start_positions = torch.tensor([f.start_position for f in train_features], dtype=torch.long)
         all_end_positions = torch.tensor([f.end_position for f in train_features], dtype=torch.long)
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_segment_ids_flipped, all_query_length, # added_flag all_segment_ids_flipped, all_query_length
