@@ -1204,12 +1204,13 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print(question_output_masked.is_leaf) # true
         print(question_output_masked.requires_grad) # true
 
+        question_output_masked = torch.tensor(question_output_masked.data, device=input_ids.device)
         # question_output_masked.requires_grad_(True)
         # print(question_output_masked.is_leaf)
         # print(question_output_masked.requires_grad)
 
         # 3. create cnn representation of question
-        q_representation = self.QEmbedder(input = question_output_masked.cuda(device = input_ids.device)) # added_flag
+        q_representation = self.QEmbedder(input = question_output_masked) # added_flag
         print("q_representation output") # dbg_flag
         print(q_representation.is_leaf) #  false <- still wasn't fixed with the detach in sparse function.
         print(q_representation.requires_grad) #  true
@@ -1270,7 +1271,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         batch, seq_len, hidden_dim = sequence_output.size() 
         batch, seq_len = token_type_ids_flipped.size()
         token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
-        token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.cuda.HalfTensor) # need to convert to half tensor
+        token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.half) # need to convert to half tensor
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
