@@ -1196,8 +1196,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # print(token_type_ids)  # (batch x seq_len)
         # print(query_length) # (1xbatch) question length
         print("DEBUGGING") 
-        print(sequence_output.iscontiguous())
-        print(token_type_ids_flipped.iscontiguous())
+        print(sequence_output.is_contiguous())
+        print(token_type_ids_flipped.is_contiguous())
         
         # create sparse matrix of questions
         question_output_masked = self.sparse(sequence_output, token_type_ids_flipped.contiguous(), query_length, crop = True) # added_flag
