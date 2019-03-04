@@ -121,6 +121,8 @@ class InputFeatures(object):
         self.input_ids = input_ids
         self.input_mask = input_mask
         self.segment_ids = segment_ids
+        print("INSIDE INPUT FEATURE") # dbg_flag
+        print(segment_ids_flipped)  # dbg_flag
         self.segment_ids_flipped = segment_ids_flipped # added_flag
         self.query_length = query_length # added_flag
         self.start_position = start_position
@@ -358,7 +360,8 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
                     logger.info("end_position: %d" % (end_position))
                     logger.info(
                         "answer: %s" % (answer_text))
-
+            print("Segment_ids")  # dbg_flag
+            print(segment_ids)  # dbg_flag
             features.append(
                 InputFeatures(
                     unique_id=unique_id,
@@ -982,15 +985,15 @@ def main():
         else:
             cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
                 list(filter(None, args.bert_model.split('/'))).pop(), str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
-        print("CACHED")
+        print("CACHED")  # dbg_flag
         print(cached_train_features_file)
         train_features = None
         try:
-            print("try")
+            print("try")  # dbg_flag
             with open(cached_train_features_file, "rb") as reader:
                 train_features = pickle.load(reader)
         except:
-            print("except")
+            print("except")  # dbg_flag
             train_features = convert_examples_to_features(
                 examples=train_examples,
                 tokenizer=tokenizer,
@@ -1010,6 +1013,9 @@ def main():
         all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
+        for f in train_features:  # dbg_flag
+            print("LOOP")  # dbg_flag
+            print(f.segment_ids_flipped)  # dbg_flag
         all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long) # added_flag
         all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long) # added_flag
         all_start_positions = torch.tensor([f.start_position for f in train_features], dtype=torch.long)
