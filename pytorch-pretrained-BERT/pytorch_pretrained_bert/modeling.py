@@ -1178,7 +1178,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         self.QEmbedder = QEmbeddings(embed_size = config.hidden_size) # added_flag
 
         self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models
-        self.qa_outputs2 = nn.Linear(config.hidden_size*2, 2) # added_flag x 2: This is temporary until char embeddings come in
+        # self.qa_outputs2 = nn.Linear(config.hidden_size*2, 2) # added_flag x 2: This is temporary until char embeddings come in
         
         self.apply(self.init_bert_weights)
 
@@ -1199,7 +1199,6 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         
         # 2. create sparse matrix of questions
         question_output_masked = self.sparse(sequence_output, token_type_ids_flipped, query_length, crop = True) # added_flag
-        print("question_output_masked output") # dbg_flag
         batch, max_query_len, hidden_dim = question_output_masked.size() 
 
         # question_output_masked = torch.tensor(question_output_masked.data, dtype = torch.half, device=input_ids.device)
@@ -1209,21 +1208,15 @@ class BertForQuestionAnswering(BertPreTrainedModel):
 
         # 3. create cnn representation of question
         q_representation = self.QEmbedder(input = question_output_masked) # added_flag
-        print("q_representation output") # dbg_flag
-        print(q_representation.grad) #  
 
         # batch, hidden_dim = q_representation.size()
         q_representation = q_representation.expand(-1, seq_len, -1)
-        print("q_representation output") # dbg_flag
-        print(q_representation.grad) # false
         
         # 4. create a residual connection
         # new representation is a residual connection of the element-wise multiplication
         # idea is that a dot product between two vectors can accurately represent similarity. 
         # Then feedfwd layer retains the information from the original sequence output
         sequence_output = torch.mul(q_representation,sequence_output) + sequence_output
-        print("seq output") # dbg_flag
-        print(sequence_output.grad) 
 
 
         # print(sequence_output.is_contiguous()) # True
@@ -1260,22 +1253,11 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # print("sequence_output")
         # print(sequence_output.is_leaf) # false
         # print(sequence_output.requires_grad) # true
-        print("sparse")
-        print(token_type_ids_flipped.grad)
         batch, seq_len, hidden_dim = sequence_output.size() 
         batch, seq_len = token_type_ids_flipped.size()
         token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
-        print(token_type_ids_flipped.grad)
         token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.half) # need to convert to half tensor
-        print(token_type_ids_flipped.grad)
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
-        print(sequence_output_masked.grad)
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:].contiguous()
-        # print(sequence_output_masked.is_contiguous())
-        print(sequence_output_masked.grad)
-        # sequence_output_masked = sequence_output_masked.detach()
-        # sequence_output_masked.requires_grad_()
-        # print(sequence_output_masked.is_leaf) 
-        # print(sequence_output_masked.requires_grad) 
         return sequence_output_masked 
