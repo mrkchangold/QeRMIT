@@ -928,6 +928,7 @@ def main():
 
     if args.freeze_BERT_embed: # added_flag FREEZE!
         model.bert.embeddings.requires_grad = False # added_flag
+        logger.info("***** Freezing pre-trained BERT layers! *****") # added_flag
 
     if args.fp16:
         model.half()

@@ -1177,7 +1177,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.QEmbedder = QEmbeddings(embed_size = config.hidden_size) # added_flag
 
-        self.qa_outputs = nn.Linear(config.hidden_size, 2) # TODO: This needs to get edited
+        self.qa_outputs = nn.Linear(config.hidden_size * 2, 2) # added_flag x 2 TODO: This needs to get edited with 
         
         self.apply(self.init_bert_weights)
 
@@ -1225,10 +1225,11 @@ class BertForQuestionAnswering(BertPreTrainedModel):
             return start_logits, end_logits
     
     def sparse(self, sequence_output, token_type_ids_flipped, query_length):
-
         print(sequence_output.size())
         print(token_type_ids_flipped.size())
         print(query_length)
+        sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped)
+        print(sequence_output_masked.size())
         # TODO assert test
         return None
         # # We create a 3D attention mask from a 2D tensor mask.

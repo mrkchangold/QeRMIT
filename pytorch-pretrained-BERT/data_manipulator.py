@@ -12,8 +12,10 @@ def main():
     parser.add_argument("--output_dir", default=None, type=str, required=True, help="The output directory where the model checkpoints and predictions will be written.")
     parser.add_argument("--create_dbg", action='store_true', help="Whether to run training.")
     parser.add_argument("--augment", action='store_true', help="Whether to run training.")
-
+    parser.add_argument('--threshold', type=float, default=0.1, help="threshold for random data selection")
+    parser.add_argument('--output_file', default='dbg_sampled.json', type=str, help="The output file name.")
     args = parser.parse_args()
+
 
     if args.create_dbg:
     # just a function to create a smaller set of data set examples
@@ -39,7 +41,7 @@ def main():
         if not os.path.exists(args.output_dir):
             os.makedirs(args.output_dir)
 
-        sub_path = os.path.join(args.output_dir, 'dbg_sampled.json')
+        sub_path = os.path.join(args.output_dir, args.output_file)
         with open(sub_path, "w") as writer:
             writer.write(json.dumps(output))
             
