@@ -33,7 +33,8 @@ from torch import nn
 from torch.nn import CrossEntropyLoss
 
 from .file_utils import cached_path
-from cnn import CNN # added_flag
+# from cnn import CNN # added_flag
+from CNN_Embed import CNNEmbeddings, QEmbeddings # added_flag
 
 logger = logging.getLogger(__name__)
 
@@ -1174,8 +1175,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         self.bert = BertModel(config)
         # TODO check with Google if it's normal there is no dropout on the token classifier of SQuAD in the TF version
         # self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.cnn_encoder = CNN(e_T = config.hidden_size)
-        
+        self.QEmbedder = QEmbeddings(embed_size = config.hidden_size) # added_flag
+
         self.qa_outputs = nn.Linear(config.hidden_size, 2) # TODO: This needs to get edited
         
         self.apply(self.init_bert_weights)
@@ -1190,14 +1191,10 @@ class BertForQuestionAnswering(BertPreTrainedModel):
 
         """
         # create sparse matrix
-        if token_type_ids_flipped is not None and query_length is not None:
-            sparse_question = self.sparse(sequence_output, token_type_ids_flipped, query_length)
+        if token_type_ids_flipped is not None and query_length is not None: # added_flag
+            question_tensor = self.sparse(sequence_output, token_type_ids_flipped, query_length) # added_flag
         
-        # create cnn representation
-
-        # freeze layers if necessary.
-        if freeze_bert == True:
-            None
+        # create cnn representation of question
 
         # bring up character embed
 
@@ -1232,6 +1229,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print(sequence_output.size())
         print(token_type_ids_flipped.size())
         print(query_length)
+        # TODO assert test
         return None
         # # We create a 3D attention mask from a 2D tensor mask.
         # # Sizes are [batch_size, 1, 1, to_seq_length]
