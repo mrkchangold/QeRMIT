@@ -21,7 +21,7 @@ class CNN(nn.Module):
         self.xconv = self.convLayer(xreshaped)
         print("CNN")
         print(self.xconv.size())
-        xconv_out = nn.MaxPool1d(kernel_size = self.xconv.size()[-1] - self.k + 1)(nn.ReLU()(self.xconv)) # potentially ask question
+        xconv_out = nn.MaxPool1d(kernel_size = self.xconv.size()[-1])(nn.ReLU()(self.xconv)) # potentially ask question
         return xconv_out
 
     # def __init__(self, e_T = 50, k = 5):
