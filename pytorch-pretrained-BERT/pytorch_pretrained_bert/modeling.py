@@ -1202,8 +1202,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print("question_output_masked output") # dbg_flag
         print(question_output_masked.is_leaf) # false
         batch, max_query_len, hidden_dim = question_output_masked.size() 
-        
-        print(question_output_masked.is_leaf) # false
+        print(question_output_masked.is_leaf) # true
         print(question_output_masked.requires_grad) # true
 
         # question_output_masked.requires_grad_(True)
@@ -1211,7 +1210,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # print(question_output_masked.requires_grad)
 
         # 3. create cnn representation of question
-        q_representation = self.QEmbedder(input = question_output_masked) # added_flag
+        q_representation = self.QEmbedder(input = question_output_masked.contiguous()) # added_flag
         print("q_representation output") # dbg_flag
         print(q_representation.is_leaf) #  false
         print(q_representation.requires_grad) #  true
