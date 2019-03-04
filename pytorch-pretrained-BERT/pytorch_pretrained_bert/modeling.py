@@ -1186,7 +1186,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # apply pretrained BERT layer
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
         batch, seq_len, hidden_dim = sequence_output.size()
-        sequence_output.requires_grad(False)
+        sequence_output.requires_grad_(False)
         """
         Idea is the encode the question into a vector then concatenante it with the output of bert for context words.
         1. prep = create a sparse matrix from sequence output by using token_type_id_flipped (1 for q, 0 for c). This is similar to padding
@@ -1209,7 +1209,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print(question_output_masked.is_leaf)
         print(question_output_masked.requires_grad)
 
-        question_output_masked.requires_grad(False)
+        question_output_masked.requires_grad_(False)
         print(question_output_masked.is_leaf)
         print(question_output_masked.requires_grad)
 
@@ -1218,7 +1218,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print("q_representation output") # dbg_flag
         print(q_representation.is_leaf) #  false
         print(q_representation.requires_grad)
-        q_representation.requires_grad()
+        q_representation.requires_grad_(True)
         print(q_representation.is_leaf) #  
         print(q_representation.requires_grad)
 
