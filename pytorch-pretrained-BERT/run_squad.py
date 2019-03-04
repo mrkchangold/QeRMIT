@@ -976,11 +976,12 @@ def main():
 
     global_step = 0
     if args.do_train:
-        # if args.new_model: # added_flag because the string concetation created a strange file name format.
-        #     cached_train_features_file = args.train_file
-        # else:
-        cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
-            list(filter(None, args.bert_model.split('/'))).pop(), str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
+        if args.new_model: # added_flag because the string concetation created a strange file name format.
+            cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
+                'bert-large-uncased', str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
+        else:
+            cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
+                list(filter(None, args.bert_model.split('/'))).pop(), str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
         print("CACHED")
         print(cached_train_features_file)
         train_features = None
