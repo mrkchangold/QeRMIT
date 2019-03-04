@@ -34,7 +34,7 @@ from torch.nn import CrossEntropyLoss
 
 from .file_utils import cached_path
 # from cnn import CNN # added_flag
-from CNN_Embed import CNNEmbeddings, QEmbeddings # added_flag
+from cnn_embedding import CNNEmbeddings, QEmbeddings # added_flag
 
 logger = logging.getLogger(__name__)
 
@@ -1183,8 +1183,9 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         self.apply(self.init_bert_weights)
 
     def forward(self, input_ids, token_type_ids=None, token_type_ids_flipped=None, query_length=None, attention_mask=None, start_positions=None, end_positions=None, freeze_bert=False): # added flag token_type_ids_flipped=None, query_length=None
+        # apply pretrained BERT layer
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
-
+        batch, seq_len, hidden_dim = sequence_output.size()
         """
         Idea is the encode the question into a vector then concatenante it with the output of bert for context words.
         1. prep = create a sparse matrix from sequence output by using token_type_id_flipped (1 for q, 0 for c). This is similar to padding
@@ -1196,16 +1197,25 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # print(query_length) # (1xbatch) question length 
 
         
-        # create sparse matrix
-        if token_type_ids_flipped is not None and query_length is not None: # added_flag
-            question_tensor = self.sparse(sequence_output, token_type_ids_flipped, query_length) # added_flag
+        # create sparse matrix of questions
+        question_output_masked = self.sparse(sequence_output, token_type_ids_flipped, query_length, crop = True) # added_flag
+        batch, max_query_len, hidden_dim = question_output_masked.size()
         
         # create cnn representation of question
-
-        # bring up character embed
+        q_representation = self.QEmbedder(input = question_output_masked) # added_flag
+        # batch, hidden_dim = q_representation.size()
+        q_representation = torch.unsqueeze(q_representation,1)
+        q_representation = q_representation.expand(-1, seq_len, -1)
+        
+        # new representation is a residual connection of the element-wise multiplication
+        # idea is that a dot product between two vectors can accurately represent similarity. 
+        # Then feedfwd layer retains the information from the original sequence output
+        sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
+        
+        # TODO: bring up character embed (SKIPPED FOR NOW)
 
         # concat vectors
-        logits = self.qa_outputs2(sequence_output)
+        logits = self.qa_outputs(sequence_output)
         # logits = self.qa_outputs(sequence_output) # dbg_flag NOTE: from 03032019 model
         start_logits, end_logits = logits.split(1, dim=-1)
         start_logits = start_logits.squeeze(-1)
@@ -1230,9 +1240,11 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         else:
             return start_logits, end_logits
     
-    def sparse(self, sequence_output, token_type_ids_flipped, query_length):
+    def sparse(self, sequence_output, token_type_ids_flipped, query_length, crop = False):
         batch, seq_len, hidden_dim = sequence_output.size()
         batch, seq_len = token_type_ids_flipped.size()
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped.expand(-1,-1,hidden_dim))
-        sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
-        return sequence_output_masked
+        if crop:
+            sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
+        print(sequence_output_masked.size())
+        return sequence_output_masked 

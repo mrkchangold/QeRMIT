@@ -111,12 +111,12 @@ class QEmbeddings(nn.Module):
     def forward(self, input):
         """
         """
-        print(input.size())
-        sentence_length, batch_size, max_word_length, e_char = input.size()
-        output = input.view(-1,max_word_length,e_char)
-        output = output.permute(0,2,1) #(sentxbatch) x e_char x word_len
-        output = self.cnn(output) #input: (sentxbatch) x e_char x word_len
-        output = output.permute(0,2,1) #input: (sentxbatch) x e_word x word_len
-        output = self.hwy(output) #input (sentxbatch) x word_len x e_word
-        output = output.view(sentence_length, batch_size, -1)
+        # batch, max_q_length, e_hidden = input.size()
+        output = input.permute(0,2,1) #batch x e_hidden x max_q_length
+        output = self.cnn(output) #input: batch x e_hidden x max_q_length
+        output = output.permute(0,2,1) #input: batch x e_hidden x max_q_length
+        output = self.hwy(output) #input: batch x max_q_length x e_hidden
+        # output = output.view(sentence_length, batch_size, -1) # This seems unnecessary
+        print("OUTPUT SHAPE")
+        print(output.size()) #assuming batch x e_hidden
         return output
