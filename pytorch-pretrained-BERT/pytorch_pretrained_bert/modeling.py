@@ -1191,15 +1191,9 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         2. clip the sparse matrix and apply cnn (Probably don't need query_length in hindsight...)
         
         """
-        print("FROM FWD:")
-        print("input_ids:")
-        print(input_ids)
-
-        print("token_type_ids:")
-        print(token_type_ids)
-
-        print("query_length:")
-        print(query_length)
+        # print(input_ids) # (batch x seq_len)
+        # print(token_type_ids)  # (batch x seq_len)
+        # print(query_length) # (1xbatch) question length 
 
         
         # create sparse matrix
@@ -1237,25 +1231,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
             return start_logits, end_logits
     
     def sparse(self, sequence_output, token_type_ids_flipped, query_length):
-        print(sequence_output.size())
-        print(token_type_ids_flipped.size())
-        print(query_length)
-        sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped)
-        print(sequence_output_masked.size())
-        # TODO assert test
-        return None
-        # # We create a 3D attention mask from a 2D tensor mask.
-        # # Sizes are [batch_size, 1, 1, to_seq_length]
-        # # So we can broadcast to [batch_size, num_heads, from_seq_length, to_seq_length]
-        # # this attention mask is more simple than the triangular masking of causal attention
-        # # used in OpenAI GPT, we just need to prepare the broadcast dimension here.
-        # extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
-
-        # # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
-        # # masked positions, this operation will create a tensor which is 0.0 for
-        # # positions we want to attend and -10000.0 for masked positions.
-        # # Since we are adding it to the raw scores before the softmax, this is
-        # # effectively the same as removing these entirely.
-        # extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility
-        # extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
-
+        batch, seq_len, hidden_dim = sequence_output.size()
+        batch, seq_len = token_type_ids_flipped.size()
+        sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped.expand(-1,-1,hidden_dim))
+        sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
+        return sequence_output_masked
