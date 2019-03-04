@@ -1203,8 +1203,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print(question_output_masked.is_leaf) # false
         batch, max_query_len, hidden_dim = question_output_masked.size() 
         
-        print(question_output_masked.is_leaf)
-        print(question_output_masked.requires_grad)
+        print(question_output_masked.is_leaf) # false
+        print(question_output_masked.requires_grad) # true
 
         # question_output_masked.requires_grad_(True)
         # print(question_output_masked.is_leaf)
@@ -1214,7 +1214,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         q_representation = self.QEmbedder(input = question_output_masked) # added_flag
         print("q_representation output") # dbg_flag
         print(q_representation.is_leaf) #  false
-        print(q_representation.requires_grad)
+        print(q_representation.requires_grad) #  true
         # q_representation.requires_grad_(True)
         # print(q_representation.is_leaf) #  
         # print(q_representation.requires_grad)
@@ -1223,7 +1223,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         q_representation = q_representation.expand(-1, seq_len, -1)
         print("q_representation output") # dbg_flag
         print(q_representation.is_leaf) # false
-        print(q_representation.requires_grad)
+        print(q_representation.requires_grad) #  true
         
         # 4. create a residual connection
         # new representation is a residual connection of the element-wise multiplication
@@ -1281,6 +1281,10 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
         print(sequence_output_masked.is_leaf) #false
         print(sequence_output_masked.requires_grad) #true
+        print("DETACHING")
+        sequence_output_masked.detach_()
+        print(sequence_output_masked.is_leaf) #
+        print(sequence_output_masked.requires_grad) #
         sequence_output_masked = sequence_output_masked.requires_grad_()
         print(sequence_output_masked.is_leaf) #false
         print(sequence_output_masked.requires_grad) #true
