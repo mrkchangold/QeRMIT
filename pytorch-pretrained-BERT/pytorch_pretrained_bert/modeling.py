@@ -1204,7 +1204,6 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # create cnn representation of question
         q_representation = self.QEmbedder(input = question_output_masked) # added_flag
         # batch, hidden_dim = q_representation.size()
-        q_representation = torch.unsqueeze(q_representation,1)
         q_representation = q_representation.expand(-1, seq_len, -1)
         
         # new representation is a residual connection of the element-wise multiplication
