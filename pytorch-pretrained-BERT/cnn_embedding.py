@@ -19,6 +19,8 @@ class CNN(nn.Module):
 
     def forward(self, xreshaped: torch.Tensor):
         self.xconv = self.convLayer(xreshaped)
+        print("CNN")
+        print(self.xconv.size())
         xconv_out = nn.MaxPool1d(kernel_size = self.xconv.size()[-1] - self.k + 1)(nn.ReLU()(self.xconv)) # potentially ask question
         return xconv_out
 
@@ -113,7 +115,7 @@ class QEmbeddings(nn.Module):
         """
         print("INSIDE QEMBEDDING")
         # batch, max_q_length, e_hidden = input.size()
-        output = input.permute(0,2,1).contiguous() #batch x e_hidden x max_q_length
+        output = input.permute(0,2,1) #batch x e_hidden x max_q_length
         print(output.size())
         # print(output.grad) # false...
         output = self.cnn(output) #input: batch x e_hidden x max_q_length
