@@ -1210,7 +1210,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # print(question_output_masked.requires_grad)
 
         # 3. create cnn representation of question
-        q_representation = self.QEmbedder(input = question_output_masked.contiguous().cuda(device = input_ids.device)) # added_flag
+        q_representation = self.QEmbedder(input = question_output_masked.cuda(device = input_ids.device)) # added_flag
         print("q_representation output") # dbg_flag
         print(q_representation.is_leaf) #  false <- still wasn't fixed with the detach in sparse function.
         print(q_representation.requires_grad) #  true
