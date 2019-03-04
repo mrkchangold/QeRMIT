@@ -1177,7 +1177,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.QEmbedder = QEmbeddings(embed_size = config.hidden_size) # added_flag
 
-        self.qa_outputs = nn.Linear(config.hidden_size * 2, 2) # added_flag x 2 TODO: This needs to get edited with 
+        self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models
+        self.qa_outputs2 = nn.Linear(config.hidden_size*2, 2)# added_flag x 2: This is temporary until char embeddings come in
         
         self.apply(self.init_bert_weights)
 
@@ -1188,8 +1189,19 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         Idea is the encode the question into a vector then concatenante it with the output of bert for context words.
         1. prep = create a sparse matrix from sequence output by using token_type_id_flipped (1 for q, 0 for c). This is similar to padding
         2. clip the sparse matrix and apply cnn (Probably don't need query_length in hindsight...)
-
+        
         """
+        print("FROM FWD:")
+        print("input_ids:")
+        print(input_ids)
+
+        print("token_type_ids:")
+        print(token_type_ids)
+
+        print("query_length:")
+        print(query_length)
+
+        
         # create sparse matrix
         if token_type_ids_flipped is not None and query_length is not None: # added_flag
             question_tensor = self.sparse(sequence_output, token_type_ids_flipped, query_length) # added_flag
@@ -1199,8 +1211,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # bring up character embed
 
         # concat vectors
-
-        logits = self.qa_outputs(sequence_output)
+        logits = self.qa_outputs2(sequence_output)
+        # logits = self.qa_outputs(sequence_output) # dbg_flag NOTE: from 03032019 model
         start_logits, end_logits = logits.split(1, dim=-1)
         start_logits = start_logits.squeeze(-1)
         end_logits = end_logits.squeeze(-1)
