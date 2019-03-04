@@ -910,7 +910,11 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    if args.new_model: # added_flag, currently hardcoded
+        tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=args.do_lower_case) # added_flag, currently hardcoded
+    else: # added_flag, currently hardcoded
+        tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+
 
     train_examples = None
     num_train_optimization_steps = None
@@ -979,49 +983,27 @@ def main():
 
     global_step = 0
     if args.do_train:
-        if args.new_model: # added_flag because the string concetation created a strange file name format.
-            cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
-                'bert-large-uncased', str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
-            # cached_train_features_file = args.train_file
-        else:
-            cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
-                list(filter(None, args.bert_model.split('/'))).pop(), str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
-        print("CACHED")  # dbg_flag
-        print(cached_train_features_file)
+        cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
+            list(filter(None, args.bert_model.split('/'))).pop(), str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
         train_features = None
         
-        # NOTE: This is to make sure that changes are reflected with the cached file....
-        if args.new_model: # added_flag
-            print("reconverting examples to features")  # added_flag # recreate examples
-            train_features = convert_examples_to_features( # added_flag
-                examples=train_examples, 
+        try:
+            print("try")  # dbg_flag
+            with open(cached_train_features_file, "rb") as reader:
+                train_features = pickle.load(reader)
+        except:
+            print("except")  # dbg_flag
+            train_features = convert_examples_to_features(
+                examples=train_examples,
                 tokenizer=tokenizer,
                 max_seq_length=args.max_seq_length,
                 doc_stride=args.doc_stride,
                 max_query_length=args.max_query_length,
                 is_training=True)
-            if args.local_rank == -1 or torch.distributed.get_rank() == 0: # added_flag
-                logger.info("  Saving train features into cached file %s", cached_train_features_file) # added_flag
-                with open(cached_train_features_file, "wb") as writer: # added_flag
-                    pickle.dump(train_features, writer) # added_flag
-        else: # added_flag
-            try:
-                print("try")  # dbg_flag
-                with open(cached_train_features_file, "rb") as reader:
-                    train_features = pickle.load(reader)
-            except:
-                print("except")  # dbg_flag
-                train_features = convert_examples_to_features(
-                    examples=train_examples,
-                    tokenizer=tokenizer,
-                    max_seq_length=args.max_seq_length,
-                    doc_stride=args.doc_stride,
-                    max_query_length=args.max_query_length,
-                    is_training=True)
-                if args.local_rank == -1 or torch.distributed.get_rank() == 0:
-                    logger.info("  Saving train features into cached file %s", cached_train_features_file)
-                    with open(cached_train_features_file, "wb") as writer:
-                        pickle.dump(train_features, writer)
+            if args.local_rank == -1 or torch.distributed.get_rank() == 0:
+                logger.info("  Saving train features into cached file %s", cached_train_features_file)
+                with open(cached_train_features_file, "wb") as writer:
+                    pickle.dump(train_features, writer)
         
         logger.info("***** Running training *****")
         logger.info("  Num orig examples = %d", len(train_examples))
