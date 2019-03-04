@@ -1195,9 +1195,9 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # print(input_ids) # (batch x seq_len)
         # print(token_type_ids)  # (batch x seq_len)
         # print(query_length) # (1xbatch) question length
-        print("DEBUGGING") 
-        print(sequence_output.is_contiguous())
-        print(token_type_ids_flipped.is_contiguous())
+        # print("DEBUGGING") 
+        # print(sequence_output.is_contiguous()) # both are True
+        # print(token_type_ids_flipped.is_contiguous())
         
         # create sparse matrix of questions
         question_output_masked = self.sparse(sequence_output, token_type_ids_flipped.contiguous(), query_length, crop = True) # added_flag
@@ -1212,7 +1212,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # idea is that a dot product between two vectors can accurately represent similarity. 
         # Then feedfwd layer retains the information from the original sequence output
         sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
-        
+        print(sequence_output.is_contiguous())
+        sequence_output = sequence_output.contiguous()
         # TODO: bring up character embed (SKIPPED FOR NOW)
 
         # concat vectors

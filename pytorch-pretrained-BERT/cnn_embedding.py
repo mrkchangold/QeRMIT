@@ -117,6 +117,6 @@ class QEmbeddings(nn.Module):
         output = output.permute(0,2,1) #input: batch x e_hidden x max_q_length
         output = self.hwy(output) #input: batch x max_q_length x e_hidden
         # output = output.view(sentence_length, batch_size, -1) # This seems unnecessary
-        print("OUTPUT SHAPE")
-        print(output.size()) #assuming batch x 1 x e_hidden
+        # print("OUTPUT SHAPE")
+        # print(output.size()) #assuming batch x 1 x e_hidden
         return output
