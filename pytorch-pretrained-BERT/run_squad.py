@@ -1005,6 +1005,22 @@ def main():
                 logger.info("  Saving train features into cached file %s", cached_train_features_file)
                 with open(cached_train_features_file, "wb") as writer:
                     pickle.dump(train_features, writer)
+        
+        # NOTE: This is to make sure that changes are reflected with the cached file....
+        if args.new_model: # added_flag
+            print("reconverting examples to features")  # added_flag # recreate examples
+            train_features = convert_examples_to_features( # added_flag
+                examples=train_examples, 
+                tokenizer=tokenizer,
+                max_seq_length=args.max_seq_length,
+                doc_stride=args.doc_stride,
+                max_query_length=args.max_query_length,
+                is_training=True)
+            if args.local_rank == -1 or torch.distributed.get_rank() == 0: # added_flag
+                logger.info("  Saving train features into cached file %s", cached_train_features_file) # added_flag
+                with open(cached_train_features_file, "wb") as writer: # added_flag
+                    pickle.dump(train_features, writer) # added_flag
+
         logger.info("***** Running training *****")
         logger.info("  Num orig examples = %d", len(train_examples))
         logger.info("  Num split examples = %d", len(train_features))
