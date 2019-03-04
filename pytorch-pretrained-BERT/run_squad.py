@@ -121,8 +121,6 @@ class InputFeatures(object):
         self.input_ids = input_ids
         self.input_mask = input_mask
         self.segment_ids = segment_ids
-        print("INSIDE INPUT FEATURE") # dbg_flag
-        print(segment_ids_flipped)  # dbg_flag
         self.segment_ids_flipped = segment_ids_flipped # added_flag
         self.query_length = query_length # added_flag
         self.start_position = start_position
@@ -360,8 +358,6 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
                     logger.info("end_position: %d" % (end_position))
                     logger.info(
                         "answer: %s" % (answer_text))
-            print("Segment_ids")  # dbg_flag
-            print(segment_ids)  # dbg_flag
             features.append(
                 InputFeatures(
                     unique_id=unique_id,
@@ -988,11 +984,9 @@ def main():
         train_features = None
         
         try:
-            print("try")  # dbg_flag
             with open(cached_train_features_file, "rb") as reader:
                 train_features = pickle.load(reader)
         except:
-            print("except")  # dbg_flag
             train_features = convert_examples_to_features(
                 examples=train_examples,
                 tokenizer=tokenizer,
