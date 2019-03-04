@@ -1212,8 +1212,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # idea is that a dot product between two vectors can accurately represent similarity. 
         # Then feedfwd layer retains the information from the original sequence output
         sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
-        print(sequence_output.is_contiguous())
-        sequence_output = sequence_output.contiguous()
+        # print(sequence_output.is_contiguous()) # True
+        # sequence_output = sequence_output.contiguous()
         # TODO: bring up character embed (SKIPPED FOR NOW)
 
         # concat vectors
