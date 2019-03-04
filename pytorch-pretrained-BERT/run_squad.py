@@ -1100,12 +1100,12 @@ def main():
         logger.info("  Num split examples = %d", len(eval_features))
         logger.info("  Batch size = %d", args.predict_batch_size)
 
-        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
-        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
-        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
-        all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long) # added_flag
-        all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long) # added_flag
-        all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
+        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long, requires_grad = True)
+        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long, requires_grad = True)
+        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long, requires_grad = True)
+        all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long, requires_grad = True) # added_flag
+        all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long, requires_grad = True) # added_flag
+        all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long, requires_grad = True)
         eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_segment_ids_flipped, all_query_length, all_example_index) # added_flag all_segment_ids_flipped, all_query_length
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)

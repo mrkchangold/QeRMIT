@@ -1183,7 +1183,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         self.apply(self.init_bert_weights)
 
     def forward(self, input_ids, token_type_ids=None, token_type_ids_flipped=None, query_length=None, attention_mask=None, start_positions=None, end_positions=None, freeze_bert=False): # added flag token_type_ids_flipped=None, query_length=None
-        # apply pretrained BERT layer
+        # 1. apply pretrained BERT layer
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
         batch, seq_len, hidden_dim = sequence_output.size()
         # sequence_output.requires_grad_(False) # RuntimeError: you can only change requires_grad flags of leaf variables.
@@ -1197,7 +1197,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # print(token_type_ids)  # (batch x seq_len)
         # print(query_length) # (1xbatch) question length
         
-        # create sparse matrix of questions
+        # 2. create sparse matrix of questions
         question_output_masked = self.sparse(sequence_output, token_type_ids_flipped.contiguous(), query_length, crop = True) # added_flag
         print("question_output_masked output") # dbg_flag
         print(question_output_masked.is_leaf) # false
@@ -1210,7 +1210,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # print(question_output_masked.is_leaf)
         # print(question_output_masked.requires_grad)
 
-        # create cnn representation of question
+        # 3. create cnn representation of question
         q_representation = self.QEmbedder(input = question_output_masked) # added_flag
         print("q_representation output") # dbg_flag
         print(q_representation.is_leaf) #  false
@@ -1224,6 +1224,8 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print("q_representation output") # dbg_flag
         print(q_representation.is_leaf) # false
         print(q_representation.requires_grad)
+        
+        # 4. create a residual connection
         # new representation is a residual connection of the element-wise multiplication
         # idea is that a dot product between two vectors can accurately represent similarity. 
         # Then feedfwd layer retains the information from the original sequence output
@@ -1276,12 +1278,12 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.float16)
         print(token_type_ids_flipped.is_leaf) #true
         print(token_type_ids_flipped.requires_grad) #false
-        sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped, requires_grad = True) #.requires_grad_()
+        sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
         print(sequence_output_masked.is_leaf) #false
         print(sequence_output_masked.requires_grad) #true
-        # sequence_output_masked = sequence_output_masked.requires_grad_()
-        # print(sequence_output_masked.is_leaf) #false
-        # print(sequence_output_masked.requires_grad) #true
+        sequence_output_masked = sequence_output_masked.requires_grad_()
+        print(sequence_output_masked.is_leaf) #false
+        print(sequence_output_masked.requires_grad) #true
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
         print(sequence_output_masked.is_leaf) #false
