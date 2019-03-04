@@ -1204,7 +1204,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print(question_output_masked.is_leaf) # true
         print(question_output_masked.requires_grad) # true
 
-        question_output_masked = torch.tensor(question_output_masked.data, device=input_ids.device)
+        question_output_masked = torch.tensor(question_output_masked.data, dtype = torch.half, device=input_ids.device)
         # question_output_masked.requires_grad_(True)
         # print(question_output_masked.is_leaf)
         # print(question_output_masked.requires_grad)

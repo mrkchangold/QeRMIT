@@ -117,9 +117,9 @@ class QEmbeddings(nn.Module):
         output = input.permute(0,2,1) #batch x e_hidden x max_q_length
         print(output.is_leaf)
         output = self.cnn(output) #input: batch x e_hidden x max_q_length
-        print(output.is_leaf)
+        print(output.is_leaf) # true
         output = output.permute(0,2,1) #input: batch x e_hidden x max_q_length
-        print(output.is_leaf)
+        print(output.is_leaf) # false
         output = self.hwy(output) #input: batch x max_q_length x e_hidden
         print(output.is_leaf)
         # output = output.view(sentence_length, batch_size, -1) # This seems unnecessary
