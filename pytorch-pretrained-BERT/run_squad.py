@@ -209,7 +209,7 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
 def convert_examples_to_features(examples, tokenizer, max_seq_length,
                                  doc_stride, max_query_length, is_training):
     """Loads a data file into a list of `InputBatch`s."""
-
+    print("entered convert")
     unique_id = 1000000000
 
     features = []
@@ -447,7 +447,25 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
         num_left_context = position - doc_span.start
         num_right_context = end - position
         score = min(num_left_context, num_right_context) + 0.01 * doc_span.length
-        if best_score is None or score > best_score:
+        if best_score is None or score > best_score:python run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_model
             best_score = score
             best_span_index = span_index
 
@@ -455,20 +473,200 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
 
 
 RawResult = collections.namedtuple("RawResult",
-                                   ["unique_id", "start_logits", "end_logits"])
+                                   ["unique_id", "stpython run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_modelnd_logits"])
 
 
-def write_predictions(all_examples, all_features, all_results, n_best_size,
-                      max_answer_length, do_lower_case, output_prediction_file,
-                      output_nbest_file, output_null_log_odds_file, verbose_logging,
-                      version_2_with_negative, null_score_diff_threshold, output_dir):
-    """Write final predictions to the json file and log-odds of null if needed."""
-    logger.info("Writing predictions to: %s" % (output_prediction_file))
-    logger.info("Writing nbest to: %s" % (output_nbest_file))
+def write_predictions(all_examples, all_features, alpython run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_modelst_size,
+                      max_answer_length, do_lower_capython run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_modeliction_file,
+                      output_nbest_file, output_nullpython run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_model verbose_logging,
+                      version_2_with_negative, null_python run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_modelshold, output_dir):
+    """Write final predictions to the json file and python run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_modell if needed."""
+    logger.info("Writing predictions to: %s" % (outppython run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_modelile))
+    logger.info("Writing nbest to: %s" % (output_nbepython run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_model
 
-    example_index_to_features = collections.defaultdict(list)
+    example_index_to_features = collections.defaultdpython run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_model
     for feature in all_features:
-        example_index_to_features[feature.example_index].append(feature)
+        example_index_to_features[feature.example_inpython run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_modelture)
 
     unique_id_to_result = {}
     for result in all_results:
@@ -981,16 +1179,17 @@ def main():
     global_step = 0
     if args.do_train:
         if args.new_model: # added_flag because the string concetation created a strange file name format.
-            cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
-                'bert-large-uncased', str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
+            cached_train_features_file = args.train_file
         else:
             cached_train_features_file = args.train_file+'_{0}_{1}_{2}_{3}'.format(
                 list(filter(None, args.bert_model.split('/'))).pop(), str(args.max_seq_length), str(args.doc_stride), str(args.max_query_length))
         train_features = None
         try:
+            print("entered try")
             with open(cached_train_features_file, "rb") as reader:
                 train_features = pickle.load(reader)
         except:
+            print("entered except")
             train_features = convert_examples_to_features(
                 examples=train_examples,
                 tokenizer=tokenizer,
