@@ -1254,6 +1254,9 @@ class BertForQuestionAnswering(BertPreTrainedModel):
             return start_logits, end_logits
     
     def sparse(self, sequence_output, token_type_ids_flipped, query_length, crop = False):
+        print("sequence_output")
+        print(sequence_output.is_leaf)
+        print(sequence_output.requires_grad)
         print("sparse")
         batch, seq_len, hidden_dim = sequence_output.size() 
         batch, seq_len = token_type_ids_flipped.size()
@@ -1263,8 +1266,13 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         print(token_type_ids_flipped.is_leaf) #true
         token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.float16)
         print(token_type_ids_flipped.is_leaf) #true
+        print(token_type_ids_flipped.requires_grad)
         sequence_output_masked = sequence_output.mul(token_type_ids_flipped).requires_grad_()
+        print(sequence_output_masked.is_leaf) #
+        print(sequence_output_masked.requires_grad)
+        sequence_output_masked = sequence_output_masked.requires_grad_()
         print(sequence_output_masked.is_leaf) #false
+        print(sequence_output_masked.requires_grad)
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
         print(sequence_output_masked.is_leaf) #false
