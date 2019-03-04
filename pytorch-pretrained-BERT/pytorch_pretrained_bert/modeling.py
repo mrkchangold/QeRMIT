@@ -1243,6 +1243,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
     def sparse(self, sequence_output, token_type_ids_flipped, query_length, crop = False):
         batch, seq_len, hidden_dim = sequence_output.size()
         batch, seq_len = token_type_ids_flipped.size()
+        token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped.expand(-1,-1,hidden_dim))
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
