@@ -1194,11 +1194,13 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         """
         # print(input_ids) # (batch x seq_len)
         # print(token_type_ids)  # (batch x seq_len)
-        # print(query_length) # (1xbatch) question length 
-
+        # print(query_length) # (1xbatch) question length
+        print("DEBUGGING") 
+        print(sequence_output.iscontiguous())
+        print(token_type_ids_flipped.iscontiguous())
         
         # create sparse matrix of questions
-        question_output_masked = self.sparse(sequence_output, token_type_ids_flipped, query_length, crop = True) # added_flag
+        question_output_masked = self.sparse(sequence_output, token_type_ids_flipped.contiguous(), query_length, crop = True) # added_flag
         batch, max_query_len, hidden_dim = question_output_masked.size()
         
         # create cnn representation of question
@@ -1249,5 +1251,4 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped)
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
-        print(sequence_output_masked.size())
         return sequence_output_masked 
