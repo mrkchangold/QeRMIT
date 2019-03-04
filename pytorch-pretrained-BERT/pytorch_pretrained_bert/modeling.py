@@ -1201,19 +1201,28 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         
         # create sparse matrix of questions
         question_output_masked = self.sparse(sequence_output, token_type_ids_flipped.contiguous(), query_length, crop = True) # added_flag
+        print("question_output_masked output") # dbg_flag
+        print(question_output_masked.is_leaf) # 
         batch, max_query_len, hidden_dim = question_output_masked.size()
         
         # create cnn representation of question
         q_representation = self.QEmbedder(input = question_output_masked) # added_flag
+        print("q_representation output") # dbg_flag
+        print(q_representation.is_leaf) # 
+
         # batch, hidden_dim = q_representation.size()
         q_representation = q_representation.expand(-1, seq_len, -1)
-        
+        print("q_representation output") # dbg_flag
+        print(q_representation.is_leaf) # 
+
         # new representation is a residual connection of the element-wise multiplication
         # idea is that a dot product between two vectors can accurately represent similarity. 
         # Then feedfwd layer retains the information from the original sequence output
         sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
-        print("seq output")
-        print(sequence_output.is_leaf)
+        print("seq output") # dbg_flag
+        print(sequence_output.is_leaf) # false
+
+
         # print(sequence_output.is_contiguous()) # True
         # sequence_output = sequence_output.contiguous()
         # TODO: bring up character embed (SKIPPED FOR NOW)
@@ -1246,16 +1255,17 @@ class BertForQuestionAnswering(BertPreTrainedModel):
     
     def sparse(self, sequence_output, token_type_ids_flipped, query_length, crop = False):
         print("sparse")
-        batch, seq_len, hidden_dim = sequence_output.size()
+        batch, seq_len, hidden_dim = sequence_output.size() 
         batch, seq_len = token_type_ids_flipped.size()
         token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
         # print(token_type_ids_flipped.type()) # long tensor
         # print(sequence_output.type()) # half tensor
-        print(token_type_ids_flipped.is_leaf)
+        print(token_type_ids_flipped.is_leaf) #true
         token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.float16)
-        print(token_type_ids_flipped.is_leaf)
-        sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped)
-        print(sequence_output_masked.is_leaf)
+        print(token_type_ids_flipped.is_leaf) #true
+        sequence_output_masked = sequence_output.mul(token_type_ids_flipped)
+        print(sequence_output_masked.is_leaf) #false
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:]
+        print(sequence_output_masked.is_leaf)
         return sequence_output_masked 

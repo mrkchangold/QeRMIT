@@ -1022,6 +1022,8 @@ def main():
         all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
         all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long, requires_grad = False) # added_flag
+        print("all_segment_ids_flipped") # dbg_flag
+        print(all_segment_ids_flipped.is_leaf) # 
         all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long, requires_grad = False) # added_flag
         all_start_positions = torch.tensor([f.start_position for f in train_features], dtype=torch.long)
         all_end_positions = torch.tensor([f.end_position for f in train_features], dtype=torch.long)
@@ -1043,7 +1045,7 @@ def main():
                 # print(loss.is_contiguous()) # dbg_flag no problem
                 print("loss")
                 print(loss) # dbg_flag 
-                print(loss.is_leaf)
+                print(loss.is_leaf) # currently false
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
                 if args.gradient_accumulation_steps > 1:
