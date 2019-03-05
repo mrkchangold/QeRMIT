@@ -940,8 +940,10 @@ def main():
     # FREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEZE!
     if args.freeze_BERT_embed: # added_flag FREEZE!
         for name, param in model.named_parameters():
-            if str(name) != 'module.qa_outputs.weight' or str(name) != 'module.qa_outputs.weight':
-                param.requires_grad = False # added_flag
+            if str(name) == 'module.qa_outputs.weight' or str(name) == 'module.qa_outputs.weight':
+                param.requires_grad = True # added_flag
+            else:
+                param.requires_grad = False
 
         logger.info("***** Freezing pre-trained BERT layers! *****") # added_flag
 
