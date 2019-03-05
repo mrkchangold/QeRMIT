@@ -15,7 +15,7 @@ class CNN(nn.Module):
         self.e_char = e_char
         self.xconv = None
         self.k = k
-        self.convLayer = nn.Conv1d(in_channels = e_char, out_channels = e_word, kernel_size = k, stride=1, padding=0, bias=True)
+        self.convLayer = nn.Conv1d(in_channels = e_char, out_channels = e_word, kernel_size = k, stride=1, padding=2, bias=True) # added_flag padding = 2
 
     def forward(self, xreshaped: torch.Tensor):
         self.xconv = self.convLayer(xreshaped)
@@ -103,7 +103,7 @@ class QEmbeddings(nn.Module):
         self.embed_size = embed_size
         self.dropout = 0.3
 
-        self.cnn = CNN(e_word = embed_size, e_char = embed_size, k = 5)
+        self.cnn = CNN(e_word = embed_size, e_char = embed_size, k = 5) # if you change k remember to change p
         self.hwy = Highway(e_word = embed_size)
         self.dropout = nn.Dropout(self.dropout)
         # self.embeddings = nn.Embedding(num_embeddings = len(vocab.char2id), embedding_dim = self.e_char, padding_idx = vocab.char2id['<pad>'])
