@@ -948,6 +948,10 @@ def main():
         logger.info("***** Freezing pre-trained BERT layers! *****") # added_flag
     else:
         parameter_list = list(model.named_parameters())
+        # hack to remove pooler, which is not used
+        # thus it produce None grad that break apex
+        parameter_list = [n for n in parameter_list if 'pooler' not in n[0]]  
+
     if args.fp16:
         model.half()
     model.to(device)
@@ -970,13 +974,11 @@ def main():
 
     
     # Prepare optimizer
-    param_optimizer = parameter_list
+    param_optimizer = parameter_list # added_flag
 
 
 
-    # hack to remove pooler, which is not used
-    # thus it produce None grad that break apex
-    param_optimizer = [n for n in param_optimizer if 'pooler' not in n[0]]
+
 
     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
     optimizer_grouped_parameters = [
