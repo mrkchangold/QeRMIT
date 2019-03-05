@@ -1261,3 +1261,69 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:].contiguous()
         return sequence_output_masked 
+
+class BertForQuestionAnswering2(BertPreTrainedModel): # uses maxpool
+    def __init__(self, config):
+        super(BertForQuestionAnswering, self).__init__(config)
+        self.bert = BertModel(config)
+        self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models        
+        self.apply(self.init_bert_weights)
+
+    def forward(self, input_ids, token_type_ids=None, token_type_ids_flipped=None, query_length=None, attention_mask=None, start_positions=None, end_positions=None, freeze_bert=False): # added flag token_type_ids_flipped=None, query_length=None
+        # 1. apply pretrained BERT layer
+        sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
+        batch, seq_len, hidden_dim = sequence_output.size()
+        
+        # 2. Use Max pool of the question
+        question_output_masked = self.sparse(sequence_output, token_type_ids_flipped, query_length, crop = True) # added_flag
+        batch, max_query_len, hidden_dim = question_output_masked.size() 
+        question_output_masked = question_output_masked.permute(0,2,1)
+        q_representation = nn.MaxPool1d(kernel_size = question_output_masked.size()[-1])(nn.ReLU()(question_output_masked))
+        q_representation = q_representation.permute(0,2,1)
+        q_representation = q_representation.expand(-1, seq_len, -1)
+        
+        sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
+
+
+        # print(sequence_output.is_contiguous()) # True
+        # sequence_output = sequence_output.contiguous()
+        # TODO: bring up character embed (SKIPPED FOR NOW)
+
+        # concat vectors
+        logits = self.qa_outputs(sequence_output)
+        # logits = self.qa_outputs(sequence_output) # dbg_flag NOTE: from 03032019 model
+        start_logits, end_logits = logits.split(1, dim=-1)
+        start_logits = start_logits.squeeze(-1)
+        end_logits = end_logits.squeeze(-1)
+
+        if start_positions is not None and end_positions is not None:
+            # If we are on multi-GPU, split add a dimension
+            if len(start_positions.size()) > 1:
+                start_positions = start_positions.squeeze(-1)
+            if len(end_positions.size()) > 1:
+                end_positions = end_positions.squeeze(-1)
+            # sometimes the start/end positions are outside our model inputs, we ignore these terms
+            ignored_index = start_logits.size(1)
+            start_positions.clamp_(0, ignored_index)
+            end_positions.clamp_(0, ignored_index)
+
+            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
+            start_loss = loss_fct(start_logits, start_positions)
+            end_loss = loss_fct(end_logits, end_positions)
+            total_loss = (start_loss + end_loss) / 2
+            return total_loss
+        else:
+            return start_logits, end_logits
+    
+    def sparse(self, sequence_output, token_type_ids_flipped, query_length, crop = False):
+        # print("sequence_output")
+        # print(sequence_output.is_leaf) # false
+        # print(sequence_output.requires_grad) # true
+        batch, seq_len, hidden_dim = sequence_output.size() 
+        batch, seq_len = token_type_ids_flipped.size()
+        token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
+        token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.half) # need to convert to half tensor
+        sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
+        if crop:
+            sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:].contiguous()
+        return sequence_output_masked 

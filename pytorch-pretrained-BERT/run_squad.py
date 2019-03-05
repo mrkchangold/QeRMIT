@@ -815,6 +815,8 @@ def main():
     parser.add_argument("--freeze_BERT_embed", action='store_true', help="Whether to freeze BERT embedding layers.") # added_flag
     parser.add_argument("--new_model", action='store_true', help="If we are loading a new model.") # added_flag
     parser.add_argument("--cache_example", action='store_true', help="If we are loading a new model.") # added_flag
+    parser.add_argument("--model2", action='store_true', help="If we are loading a new model.") # added_flag
+    parser.add_argument("--model3", action='store_true', help="If we are loading a new model.") # added_flag
     parser.add_argument("--train_batch_size", default=32, type=int, help="Total batch size for training.")
     parser.add_argument("--predict_batch_size", default=8, type=int, help="Total batch size for predictions.")
     parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
@@ -924,7 +926,11 @@ def main():
             num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
 
     # Prepare model
-    model = BertForQuestionAnswering.from_pretrained(args.bert_model,
+    if args.model2:
+        model = BertForQuestionAnswering2.from_pretrained(args.bert_model,
+            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+    else:
+        model = BertForQuestionAnswering.from_pretrained(args.bert_model,
             cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
 
     if args.freeze_BERT_embed: # added_flag FREEZE!
@@ -1074,7 +1080,10 @@ def main():
         model = BertForQuestionAnswering(config)
         model.load_state_dict(torch.load(output_model_file))
     else:
-        model = BertForQuestionAnswering.from_pretrained(args.bert_model)
+        if args.model2: # added_flag
+            model = BertForQuestionAnswering2.from_pretrained(args.bert_model)
+        else:
+            model = BertForQuestionAnswering.from_pretrained(args.bert_model)
 
     model.to(device)
 
