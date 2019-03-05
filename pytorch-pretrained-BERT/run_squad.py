@@ -35,7 +35,7 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
-from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertForQuestionAnswering2, BertForQuestionAnswering_OG, BertConfig, WEIGHTS_NAME, CONFIG_NAME
+from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertForQuestionAnswering2, BertForQuestionAnswering3, BertForQuestionAnswering_OG, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
                                                   BertTokenizer,
@@ -930,6 +930,9 @@ def main():
     if args.model2:
         model = BertForQuestionAnswering2.from_pretrained(args.bert_model,
             cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+    elif args.model3:
+        model = BertForQuestionAnswering3.from_pretrained(args.bert_model,
+            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
     elif args.OG:
         model = BertForQuestionAnswering_OG.from_pretrained(args.bert_model,
             cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
@@ -1096,11 +1099,20 @@ def main():
 
         # Load a trained model and config that you have fine-tuned
         config = BertConfig(output_config_file)
-        model = BertForQuestionAnswering(config)
+        if args.model2: # added_flag
+            model = BertForQuestionAnswering2(config)
+        elif args.model3:
+            model = BertForQuestionAnswering3(config)
+        elif args.OG:
+            model = BertForQuestionAnswering_OG(config)
+        else:
+            model = BertForQuestionAnswering(config)
         model.load_state_dict(torch.load(output_model_file))
     else:
         if args.model2: # added_flag
             model = BertForQuestionAnswering2.from_pretrained(args.bert_model)
+        elif args.model3:
+            model = BertForQuestionAnswering3.from_pretrained(args.bert_model)
         elif args.OG:
             model = BertForQuestionAnswering_OG.from_pretrained(args.bert_model)
         else:
