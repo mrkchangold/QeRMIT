@@ -941,10 +941,10 @@ def main():
     if args.freeze_BERT_embed: # added_flag FREEZE!
         parameter_list = []
         parametersOfBERT = model.bert
-        for param in parametersOfBERT.parameters():
+        for name, param in parametersOfBERT.named_parameters():
             param.requires_grad = False
-        else:
-            parameter_list.append(param)
+        
+        parameter_list = list(model.qa_outputs.named_parameters())
         logger.info("***** Freezing pre-trained BERT layers! *****") # added_flag
     else:
         parameter_list = list(model.named_parameters())
