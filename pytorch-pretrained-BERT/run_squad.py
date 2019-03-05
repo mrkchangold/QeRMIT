@@ -954,8 +954,17 @@ def main():
     elif n_gpu > 1:
         model = torch.nn.DataParallel(model)
 
+    
+    # added_flag!!!
+    for name, param in model.named_parameters():
+        print(name)
+        print(param)
+
+    
     # Prepare optimizer
     param_optimizer = list(model.named_parameters())
+
+
 
     # hack to remove pooler, which is not used
     # thus it produce None grad that break apex
