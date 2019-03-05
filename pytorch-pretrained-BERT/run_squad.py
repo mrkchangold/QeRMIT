@@ -939,11 +939,9 @@ def main():
 
     # FREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEZE!
     if args.freeze_BERT_embed: # added_flag FREEZE!
-        parameter_list = []
-        parametersOfBERT = model.bert
-        
+        parameter_list = []        
         for name, param in model.named_parameters():
-            if param in list(parametersOfBERT.parameters()):
+            if param in set(model.bert.parameters()):
                 param.requires_grad = False
             else:
                 param.requires_grad = True
