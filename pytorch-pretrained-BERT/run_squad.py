@@ -939,13 +939,10 @@ def main():
 
     # FREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEZE!
     if args.freeze_BERT_embed: # added_flag FREEZE!
-        layer_depth = len(model.parameters())
-        for layer, param in enumerate(model.parameters()):
-            if layer < layer_depth - 2:
-                param.requires_grad = False # added_flag
-            else:
-                param.requires_grad = True
-
+        for name, param in model.named_parameters():
+            param.requires_grad = False
+        model.qa_outputs.weight.requires_grad = True
+        model.qa_outputs.bias.requires_grad = True
         logger.info("***** Freezing pre-trained BERT layers! *****") # added_flag
 
     if args.fp16:
