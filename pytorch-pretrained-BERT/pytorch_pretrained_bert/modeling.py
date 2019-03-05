@@ -1401,4 +1401,4 @@ class BertForQuestionAnswering_OG(BertPreTrainedModel):
             total_loss = (start_loss + end_loss) / 2
             return total_loss
         else:
-return start_logits, end_logits
+            return start_logits, end_logits
