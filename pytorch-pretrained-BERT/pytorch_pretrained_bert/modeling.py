@@ -1330,7 +1330,7 @@ class BertForQuestionAnswering2(BertPreTrainedModel): # uses maxpool
 
 class BertForQuestionAnswering3(BertPreTrainedModel): # uses CLS vector
     def __init__(self, config):
-        super(BertForQuestionAnswering2, self).__init__(config)
+        super(BertForQuestionAnswering3, self).__init__(config)
         self.bert = BertModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models        
         self.apply(self.init_bert_weights)
