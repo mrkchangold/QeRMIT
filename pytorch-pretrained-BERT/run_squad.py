@@ -965,14 +965,6 @@ def main():
         model = DDP(model)
     elif n_gpu > 1:
         model = torch.nn.DataParallel(model)
-
-    
-    # added_flag!!!
-    for name, param in model.named_parameters():
-        print(name)
-        print(type(name))
-        print(param)
-
     
     # Prepare optimizer
     param_optimizer = parameter_list # added_flag
