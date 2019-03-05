@@ -1139,10 +1139,13 @@ def main():
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
-        all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long) # added_flag
-        all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long) # added_flag
         all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
-        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_segment_ids_flipped, all_query_length, all_example_index) # added_flag all_segment_ids_flipped, all_query_length
+        if not args.OG: # added_flag
+            all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long) # added_flag
+            all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long) # added_flag
+            eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_segment_ids_flipped, all_query_length, all_example_index) # added_flag all_segment_ids_flipped, all_query_length
+        else:
+            eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
         eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size)
@@ -1150,33 +1153,58 @@ def main():
         model.eval()
         all_results = []
         logger.info("Start evaluating")
-        for input_ids, input_mask, segment_ids, segment_ids_flipped, query_length, example_indices in tqdm(eval_dataloader, desc="Evaluating"): # added_flag segment_ids_flipped, query_length
-            if len(all_results) % 1000 == 0:
-                logger.info("Processing example: %d" % (len(all_results)))
-            input_ids = input_ids.to(device)
-            input_mask = input_mask.to(device)
-            segment_ids = segment_ids.to(device)
-            segment_ids_flipped = segment_ids_flipped.to(device) # added_flag
-            query_length = query_length.to(device) # added_flag
-            with torch.no_grad():
-                batch_start_logits, batch_end_logits = model(input_ids, segment_ids, segment_ids_flipped, query_length, input_mask) # added_flag
-            for i, example_index in enumerate(example_indices):
-                start_logits = batch_start_logits[i].detach().cpu().tolist()
-                end_logits = batch_end_logits[i].detach().cpu().tolist()
-                eval_feature = eval_features[example_index.item()]
-                unique_id = int(eval_feature.unique_id)
-                all_results.append(RawResult(unique_id=unique_id,
-                                             start_logits=start_logits,
-                                             end_logits=end_logits))
-        output_prediction_file = os.path.join(args.output_dir, "predictions.json")
-        output_nbest_file = os.path.join(args.output_dir, "nbest_predictions.json")
-        output_null_log_odds_file = os.path.join(args.output_dir, "null_odds.json")
-        write_predictions(eval_examples, eval_features, all_results,
-                          args.n_best_size, args.max_answer_length,
-                          args.do_lower_case, output_prediction_file,
-                          output_nbest_file, output_null_log_odds_file, args.verbose_logging,
-                          args.version_2_with_negative, args.null_score_diff_threshold, args.output_dir) #added_flag 'args.output_dir'
-
+        if not args.OG:
+            for input_ids, input_mask, segment_ids, segment_ids_flipped, query_length, example_indices in tqdm(eval_dataloader, desc="Evaluating"): # added_flag segment_ids_flipped, query_length
+                if len(all_results) % 1000 == 0:
+                    logger.info("Processing example: %d" % (len(all_results)))
+                input_ids = input_ids.to(device)
+                input_mask = input_mask.to(device)
+                segment_ids = segment_ids.to(device)
+                segment_ids_flipped = segment_ids_flipped.to(device) # added_flag
+                query_length = query_length.to(device) # added_flag
+                with torch.no_grad():
+                    batch_start_logits, batch_end_logits = model(input_ids, segment_ids, segment_ids_flipped, query_length, input_mask) # added_flag
+                for i, example_index in enumerate(example_indices):
+                    start_logits = batch_start_logits[i].detach().cpu().tolist()
+                    end_logits = batch_end_logits[i].detach().cpu().tolist()
+                    eval_feature = eval_features[example_index.item()]
+                    unique_id = int(eval_feature.unique_id)
+                    all_results.append(RawResult(unique_id=unique_id,
+                                                start_logits=start_logits,
+                                                end_logits=end_logits))
+            output_prediction_file = os.path.join(args.output_dir, "predictions.json")
+            output_nbest_file = os.path.join(args.output_dir, "nbest_predictions.json")
+            output_null_log_odds_file = os.path.join(args.output_dir, "null_odds.json")
+            write_predictions(eval_examples, eval_features, all_results,
+                            args.n_best_size, args.max_answer_length,
+                            args.do_lower_case, output_prediction_file,
+                            output_nbest_file, output_null_log_odds_file, args.verbose_logging,
+                            args.version_2_with_negative, args.null_score_diff_threshold, args.output_dir) #added_flag 'args.output_dir'
+        else: # added_flag
+            for input_ids, input_mask, segment_ids, example_indices in tqdm(eval_dataloader, desc="Evaluating"): # added_flag segment_ids_flipped, query_length
+                if len(all_results) % 1000 == 0:
+                    logger.info("Processing example: %d" % (len(all_results)))
+                input_ids = input_ids.to(device)
+                input_mask = input_mask.to(device)
+                segment_ids = segment_ids.to(device)
+                with torch.no_grad():
+                    batch_start_logits, batch_end_logits = model(input_ids, segment_ids, input_mask) # added_flag
+                for i, example_index in enumerate(example_indices):
+                    start_logits = batch_start_logits[i].detach().cpu().tolist()
+                    end_logits = batch_end_logits[i].detach().cpu().tolist()
+                    eval_feature = eval_features[example_index.item()]
+                    unique_id = int(eval_feature.unique_id)
+                    all_results.append(RawResult(unique_id=unique_id,
+                                                start_logits=start_logits,
+                                                end_logits=end_logits))
+            output_prediction_file = os.path.join(args.output_dir, "predictions.json")
+            output_nbest_file = os.path.join(args.output_dir, "nbest_predictions.json")
+            output_null_log_odds_file = os.path.join(args.output_dir, "null_odds.json")
+            write_predictions(eval_examples, eval_features, all_results,
+                            args.n_best_size, args.max_answer_length,
+                            args.do_lower_case, output_prediction_file,
+                            output_nbest_file, output_null_log_odds_file, args.verbose_logging,
+                            args.version_2_with_negative, args.null_score_diff_threshold, args.output_dir) #added_flag 'args.output_dir'
 
 if __name__ == "__main__":
     main()
