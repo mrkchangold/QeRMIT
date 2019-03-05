@@ -1049,7 +1049,10 @@ def main():
                 if n_gpu == 1:
                     batch = tuple(t.to(device) for t in batch) # multi-gpu does scattering it-self
                 input_ids, input_mask, segment_ids, segment_ids_flipped, query_length, start_positions, end_positions = batch # added_flag = segment_ids_flipped
-                loss = model(input_ids, segment_ids, segment_ids_flipped, query_length, input_mask, start_positions, end_positions, freeze_bert=True) # added_flag = segment_ids_flipped
+                if args.OG:
+                    loss = model(input_ids, segment_ids, input_mask, start_positions, end_positions)
+                else:
+                    loss = model(input_ids, segment_ids, segment_ids_flipped, query_length, input_mask, start_positions, end_positions, freeze_bert=True) # added_flag = segment_ids_flipped
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
                 if args.gradient_accumulation_steps > 1:
