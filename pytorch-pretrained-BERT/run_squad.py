@@ -35,7 +35,7 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
-from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertForQuestionAnswering2, BertConfig, WEIGHTS_NAME, CONFIG_NAME
+from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertForQuestionAnswering2, BertForQuestionAnswering_OG, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
                                                   BertTokenizer,
@@ -817,6 +817,7 @@ def main():
     parser.add_argument("--cache_example", action='store_true', help="If we are loading a new model.") # added_flag
     parser.add_argument("--model2", action='store_true', help="If we are loading a new model.") # added_flag
     parser.add_argument("--model3", action='store_true', help="If we are loading a new model.") # added_flag
+    parser.add_argument("--OG", action='store_true', help="If we are loading a new model.") # added_flag
     parser.add_argument("--train_batch_size", default=32, type=int, help="Total batch size for training.")
     parser.add_argument("--predict_batch_size", default=8, type=int, help="Total batch size for predictions.")
     parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
@@ -928,6 +929,9 @@ def main():
     # Prepare model
     if args.model2:
         model = BertForQuestionAnswering2.from_pretrained(args.bert_model,
+            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+    elif args.OG:
+        model = BertForQuestionAnswering_OG.from_pretrained(args.bert_model,
             cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
     else:
         model = BertForQuestionAnswering.from_pretrained(args.bert_model,
@@ -1082,6 +1086,8 @@ def main():
     else:
         if args.model2: # added_flag
             model = BertForQuestionAnswering2.from_pretrained(args.bert_model)
+        elif args.OG:
+            model = BertForQuestionAnswering_OG.from_pretrained(args.bert_model)
         else:
             model = BertForQuestionAnswering.from_pretrained(args.bert_model)
 
