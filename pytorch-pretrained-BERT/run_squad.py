@@ -939,13 +939,15 @@ def main():
 
     # FREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEZE!
     if args.freeze_BERT_embed: # added_flag FREEZE!
+        parameter_list = []
         parametersOfBERT = model.bert
         for param in parametersOfBERT.parameters():
             param.requires_grad = False
-        # model.qa_outputs.weight.requires_grad = True
-        # model.qa_outputs.bias.requires_grad = True
+        else:
+            parameter_list.append(param)
         logger.info("***** Freezing pre-trained BERT layers! *****") # added_flag
-
+    else:
+        parameter_list = list(model.named_parameters())
     if args.fp16:
         model.half()
     model.to(device)
@@ -968,7 +970,7 @@ def main():
 
     
     # Prepare optimizer
-    param_optimizer = list(model.named_parameters())
+    param_optimizer = parameter_list
 
 
 
