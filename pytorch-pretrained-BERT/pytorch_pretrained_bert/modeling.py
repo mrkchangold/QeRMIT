@@ -1216,7 +1216,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # new representation is a residual connection of the element-wise multiplication
         # idea is that a dot product between two vectors can accurately represent similarity. 
         # Then feedfwd layer retains the information from the original sequence output
-        sequence_output = torch.mul(q_representation,sequence_output) + sequence_output
+        sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
 
 
         # print(sequence_output.is_contiguous()) # True
@@ -1257,7 +1257,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         batch, seq_len = token_type_ids_flipped.size()
         token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
         token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.half) # need to convert to half tensor
-        sequence_output_masked = nn.ReLU()(torch.mul(sequence_output,token_type_ids_flipped)) #.requires_grad_()
+        sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:].contiguous()
         return sequence_output_masked 
