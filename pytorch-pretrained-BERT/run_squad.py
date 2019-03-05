@@ -943,7 +943,7 @@ def main():
         parametersOfBERT = model.bert
         
         for name, param in model.named_parameters():
-            if param in parametersOfBERT.parameters():
+            if param in list(parametersOfBERT.parameters()):
                 param.requires_grad = False
             else:
                 param.requires_grad = True
