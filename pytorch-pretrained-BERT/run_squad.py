@@ -1141,8 +1141,8 @@ def main():
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
         all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
         if not args.OG: # added_flag
-            all_query_length = torch.tensor([f.query_length for f in train_features], dtype=torch.long) # added_flag
-            all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in train_features], dtype=torch.long) # added_flag
+            all_query_length = torch.tensor([f.query_length for f in eval_features], dtype=torch.long) # added_flag
+            all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in eval_features], dtype=torch.long) # added_flag
             eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_segment_ids_flipped, all_query_length, all_example_index) # added_flag all_segment_ids_flipped, all_query_length
         else:
             eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
