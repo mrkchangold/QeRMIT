@@ -1176,7 +1176,6 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # TODO check with Google if it's normal there is no dropout on the token classifier of SQuAD in the TF version
         # self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.QEmbedder = QEmbeddings(embed_size = config.hidden_size) # added_flag
-
         self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models
         # self.qa_outputs2 = nn.Linear(config.hidden_size*2, 2) # added_flag x 2: This is temporary until char embeddings come in
         
@@ -1266,6 +1265,7 @@ class BertForQuestionAnswering2(BertPreTrainedModel): # uses maxpool
     def __init__(self, config):
         super(BertForQuestionAnswering2, self).__init__(config)
         self.bert = BertModel(config)
+        self.biLinear = nn.Linear(config.hidden_size, config.hidden_size)
         self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models        
         self.apply(self.init_bert_weights)
 
@@ -1282,6 +1282,7 @@ class BertForQuestionAnswering2(BertPreTrainedModel): # uses maxpool
         q_representation = q_representation.permute(0,2,1)
         q_representation = q_representation.expand(-1, seq_len, -1)
         
+        q_representation = self.biLinear(q_representation)
         sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
 
 

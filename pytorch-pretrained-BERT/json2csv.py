@@ -10,6 +10,7 @@ def main():
     parser.add_argument("--json_file", default=None, type=str, help="predictions jsonfile location (output of run_squad). E.g., train-v1.1.json")
     parser.add_argument("--output_dir", default=None, type=str, required=True,
                         help="The output directory where the model checkpoints and predictions will be written.")
+    parser.add_argument("--OG", action='store_true', help="test")
 
     args = parser.parse_args()
 
@@ -26,7 +27,14 @@ def main():
         csv_writer.writerow(['Id', 'Predicted'])
         for qas_id in sorted(input_data):
             # TODO: determine if else this needed (if input_data[qas_id] != 'empty':)
-            csv_writer.writerow([qas_id, input_data[qas_id]])
+            if not args.OG:
+                csv_writer.writerow([qas_id, input_data[qas_id]])
+            else:
+                if input_data[qas_id] == "empty":
+                    csv_writer.writerow([qas_id, ""])
+                else:
+                    csv_writer.writerow([qas_id, input_data[qas_id]])
+
             
                 
 
