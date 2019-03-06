@@ -1342,8 +1342,8 @@ class BertForQuestionAnswering3(BertPreTrainedModel): # uses CLS vector
         
         # 2. Use <CLS> token as representation of the question
         q_representation = sequence_output[:,0,:] # takes the CLS vector
-        print(q_representation.size())
-        print(sequence_output.size())
+        q_representation = torch.unsqueeze(q_representation,1)
+        q_representation = q_representation.expand(-1,seq_len,-1)
         sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
 
 
