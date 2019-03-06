@@ -1322,7 +1322,7 @@ class BertForQuestionAnswering2(BertPreTrainedModel): # uses maxpool
         batch, seq_len, hidden_dim = sequence_output.size() 
         batch, seq_len = token_type_ids_flipped.size()
         token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
-        token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.half) # need to convert to half tensor
+        token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.float) # need to convert to half tensor
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:].contiguous()
@@ -1342,6 +1342,8 @@ class BertForQuestionAnswering3(BertPreTrainedModel): # uses CLS vector
         
         # 2. Use <CLS> token as representation of the question
         q_representation = sequence_output[:,0,:] # takes the CLS vector
+        print(q_representation.size())
+        print(sequence_output.size())
         sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
 
 
@@ -1382,7 +1384,7 @@ class BertForQuestionAnswering3(BertPreTrainedModel): # uses CLS vector
         batch, seq_len, hidden_dim = sequence_output.size() 
         batch, seq_len = token_type_ids_flipped.size()
         token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
-        token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.half) # need to convert to half tensor
+        token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.float) # need to convert to half tensor
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:].contiguous()
