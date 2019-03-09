@@ -1196,9 +1196,9 @@ def main():
         model.train()
 
         #get a bunch of stuff for tensorboard checkpoint writing
-        ema = util.EMA(model, 0.999)
+        #ema = util.EMA(model, 0.999)
         #get saver
-        saver = util.CheckpointSaver('./save/', max_checkpoints=5, metric_name='F1', maximize_metric=True, log=logger)
+        #saver = util.CheckpointSaver('./save/', max_checkpoints=5, metric_name='F1', maximize_metric=True, log=logger)
 
         
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
