@@ -107,7 +107,6 @@ class InputFeatures(object):
     def __init__(self,
                  unique_id,
                  example_index,
-                 qas_id,
                  doc_span_index,
                  tokens,
                  token_to_orig_map,
@@ -122,7 +121,6 @@ class InputFeatures(object):
                  is_impossible=None):
         self.unique_id = unique_id
         self.example_index = example_index
-        self.qas_id = qas_id
         self.doc_span_index = doc_span_index
         self.tokens = tokens
         self.token_to_orig_map = token_to_orig_map
@@ -166,7 +164,6 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                 char_to_word_offset.append(len(doc_tokens) - 1)
 
             for qa in paragraph["qas"]:
-                qas_id = qa["id"]
                 question_text = qa["question"]
                 start_position = None
                 end_position = None
@@ -225,7 +222,6 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
     features = []
     for (example_index, example) in enumerate(examples):
         query_tokens = tokenizer.tokenize(example.question_text)
-        qas_id = example.qas_id # added qas_id flag
 
         if len(query_tokens) > max_query_length:
             query_tokens = query_tokens[0:max_query_length]
@@ -373,7 +369,6 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
                 InputFeatures(
                     unique_id=unique_id,
                     example_index=example_index,
-                    qas_id=qas_id, # added_flag
                     doc_span_index=doc_span_index,
                     tokens=tokens,
                     token_to_orig_map=token_to_orig_map,
