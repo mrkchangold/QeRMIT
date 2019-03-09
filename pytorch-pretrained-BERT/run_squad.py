@@ -1149,7 +1149,7 @@ def main():
             train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
-        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size, num_workers = 8)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
 
         # Load eval_dataloader earlier for tensorboard to have access to during training.
 ##        if args.do_predict and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
