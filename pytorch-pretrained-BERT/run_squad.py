@@ -1025,17 +1025,17 @@ def main():
 
     # Prepare model
     if args.model2:
-        model = BertForQuestionAnswering2.from_pretrained(args.bert_model)
-            #cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+        model = BertForQuestionAnswering2.from_pretrained(args.bert_model,
+            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
     elif args.model3:
-        model = BertForQuestionAnswering3.from_pretrained(args.bert_model)
-            #cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+        model = BertForQuestionAnswering3.from_pretrained(args.bert_model,
+            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
     elif args.OG:
-        model = BertForQuestionAnswering_OG.from_pretrained(args.bert_model)
-            #cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+        model = BertForQuestionAnswering_OG.from_pretrained(args.bert_model,
+            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
     else:
-        model = BertForQuestionAnswering.from_pretrained(args.bert_model)
-            #cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+        model = BertForQuestionAnswering.from_pretrained(args.bert_model,
+            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
 
     # FREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEZE!
     if args.freeze_BERT_embed: # added_flag FREEZE!
@@ -1156,40 +1156,40 @@ def main():
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size, num_workers = 8)
 
         # Load eval_dataloader earlier for tensorboard to have access to during training.
-        if args.do_predict and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
-            # Need to set is_training to True even though it's not training because otherwise when loading in the examples and features
-            # start_position and end_position will always be None cause it's not set for dev
-            eval_examples = read_squad_examples(
-                input_file=args.predict_file, is_training=True, version_2_with_negative=args.version_2_with_negative)
-            eval_features = convert_examples_to_features(
-                examples=eval_examples,
-                tokenizer=tokenizer,
-                max_seq_length=args.max_seq_length,
-                doc_stride=args.doc_stride,
-                max_query_length=args.max_query_length,
-                is_training=True)
+##        if args.do_predict and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
+##            # Need to set is_training to True even though it's not training because otherwise when loading in the examples and features
+##            # start_position and end_position will always be None cause it's not set for dev
+##            eval_examples = read_squad_examples(
+##                input_file=args.predict_file, is_training=True, version_2_with_negative=args.version_2_with_negative)
+##            eval_features = convert_examples_to_features(
+##                examples=eval_examples,
+##                tokenizer=tokenizer,
+##                max_seq_length=args.max_seq_length,
+##                doc_stride=args.doc_stride,
+##                max_query_length=args.max_query_length,
+##                is_training=True)
+##
+##            #logger.info("***** Running predictions *****")
+##            #logger.info("  Num orig examples = %d", len(eval_examples))
+##            #logger.info("  Num split examples = %d", len(eval_features))
+##            #logger.info("  Batch size = %d", args.predict_batch_size)
+##
+##            all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
+##            all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
+##            all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
+##            all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
+##            if not args.OG: # added_flag
+##                all_query_length = torch.tensor([f.query_length for f in eval_features], dtype=torch.long) # added_flag
+##                all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in eval_features], dtype=torch.long) # added_flag
+##                eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_segment_ids_flipped, all_query_length, all_example_index) # added_flag all_segment_ids_flipped, all_query_length
+##            else:
+##                eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
+##            # Run prediction for full data
+##            eval_sampler = SequentialSampler(eval_data)
+##            eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size, num_workers=8)
 
-            #logger.info("***** Running predictions *****")
-            #logger.info("  Num orig examples = %d", len(eval_examples))
-            #logger.info("  Num split examples = %d", len(eval_features))
-            #logger.info("  Batch size = %d", args.predict_batch_size)
 
-            all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
-            all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
-            all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
-            all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
-            if not args.OG: # added_flag
-                all_query_length = torch.tensor([f.query_length for f in eval_features], dtype=torch.long) # added_flag
-                all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in eval_features], dtype=torch.long) # added_flag
-                eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_segment_ids_flipped, all_query_length, all_example_index) # added_flag all_segment_ids_flipped, all_query_length
-            else:
-                eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
-            # Run prediction for full data
-            eval_sampler = SequentialSampler(eval_data)
-            eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size, num_workers=8)
-
-
-        
+         
         #initialize tensorboard writer
         writer = SummaryWriter('./save/')
 
