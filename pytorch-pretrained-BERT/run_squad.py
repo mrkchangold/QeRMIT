@@ -1209,6 +1209,13 @@ def main():
                 if args.OG:
                     loss = model(input_ids, segment_ids, input_mask, start_positions, end_positions)
                 else:
+                    print("input_ids: ", input_ids)
+                    print("segment_ids: ", segment_ids)
+                    print("segment_ids_flipped: ", segment_ids_flipped)
+                    print("query_length: ", query_length)
+                    print("input_mask: ", input_mask)
+                    print("start_positions: ", start_positions)
+                    print("end_positions: ", end_positions)
                     loss = model(input_ids, segment_ids, segment_ids_flipped, query_length, input_mask, start_positions, end_positions, freeze_bert=True) # added_flag = segment_ids_flipped
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
