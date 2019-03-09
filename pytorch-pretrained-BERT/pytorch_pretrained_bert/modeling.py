@@ -1176,7 +1176,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # TODO check with Google if it's normal there is no dropout on the token classifier of SQuAD in the TF version
         # self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.QEmbedder = QEmbeddings(embed_size = config.hidden_size) # added_flag
-        self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models
+        self.qa_outputs = nn.Linear(config.hidden_size*3, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models
         # self.qa_outputs2 = nn.Linear(config.hidden_size*2, 2) # added_flag x 2: This is temporary until char embeddings come in
         
         self.apply(self.init_bert_weights)
@@ -1215,7 +1215,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # new representation is a residual connection of the element-wise multiplication
         # idea is that a dot product between two vectors can accurately represent similarity. 
         # Then feedfwd layer retains the information from the original sequence output
-        sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
+        sequence_output = torch.cat((sequence_output, q_representation, torch.mul(q_representation,sequence_output)), dim=2)
 
 
         # print(sequence_output.is_contiguous()) # True
@@ -1266,7 +1266,7 @@ class BertForQuestionAnswering2(BertPreTrainedModel): # uses maxpool
         super(BertForQuestionAnswering2, self).__init__(config)
         self.bert = BertModel(config)
         self.biLinear = nn.Linear(config.hidden_size, config.hidden_size)
-        self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models        
+        self.qa_outputs = nn.Linear(config.hidden_size*3, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models        
         self.apply(self.init_bert_weights)
 
     def forward(self, input_ids, token_type_ids=None, token_type_ids_flipped=None, query_length=None, attention_mask=None, start_positions=None, end_positions=None, freeze_bert=False): # added flag token_type_ids_flipped=None, query_length=None
@@ -1283,7 +1283,9 @@ class BertForQuestionAnswering2(BertPreTrainedModel): # uses maxpool
         q_representation = q_representation.expand(-1, seq_len, -1)
         
         q_representation = self.biLinear(q_representation)
-        sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
+        sequence_output = torch.cat((sequence_output, q_representation, torch.mul(q_representation,sequence_output)), dim=2)
+        #previous code with just elementwise dot product is on line below
+        #sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
 
 
         # print(sequence_output.is_contiguous()) # True
@@ -1333,24 +1335,27 @@ class BertForQuestionAnswering3(BertPreTrainedModel): # uses CLS vector
     def __init__(self, config):
         super(BertForQuestionAnswering3, self).__init__(config)
         self.bert = BertModel(config)
-        self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models        
+        self.qa_outputs = nn.Linear(config.hidden_size*3, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models        
         self.apply(self.init_bert_weights)
+        print("config hidden size: ", config.hidden_size)
 
     def forward(self, input_ids, token_type_ids=None, token_type_ids_flipped=None, query_length=None, attention_mask=None, start_positions=None, end_positions=None, freeze_bert=False): # added flag token_type_ids_flipped=None, query_length=None
         # 1. apply pretrained BERT layer
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
         batch, seq_len, hidden_dim = sequence_output.size()
+        #print("sequence output size before: ", sequence_output.size())
         
         # 2. Use <CLS> token as representation of the question
         q_representation = sequence_output[:,0,:] # takes the CLS vector
         q_representation = torch.unsqueeze(q_representation,1)
         q_representation = q_representation.expand(-1,seq_len,-1)
-        sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
+        sequence_output = torch.cat((sequence_output, q_representation, torch.mul(q_representation,sequence_output)), dim=2)
 
 
         # print(sequence_output.is_contiguous()) # True
         # sequence_output = sequence_output.contiguous()
         # TODO: bring up character embed (SKIPPED FOR NOW)
+        #print("sequence output size after: ", sequence_output.size())
 
         # concat vectors
         logits = self.qa_outputs(sequence_output)

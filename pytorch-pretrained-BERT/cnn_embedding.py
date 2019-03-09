@@ -101,7 +101,7 @@ class QEmbeddings(nn.Module):
         super(QEmbeddings, self).__init__()
 
         self.embed_size = embed_size
-        self.dropout = 0.3
+        self.dropout = 0.1
 
         self.cnn = CNN(e_word = embed_size, e_char = embed_size, k = 5) # if you change k remember to change p
         self.hwy = Highway(e_word = embed_size)
