@@ -1337,7 +1337,7 @@ class BertForQuestionAnswering3(BertPreTrainedModel): # uses CLS vector
         self.bert = BertModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size*3, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models        
         self.apply(self.init_bert_weights)
-        print("config hidden size: ", config.hidden_size)
+        #print("config hidden size: ", config.hidden_size)
 
     def forward(self, input_ids, token_type_ids=None, token_type_ids_flipped=None, query_length=None, attention_mask=None, start_positions=None, end_positions=None, freeze_bert=False): # added flag token_type_ids_flipped=None, query_length=None
         # 1. apply pretrained BERT layer
@@ -1390,7 +1390,7 @@ class BertForQuestionAnswering3(BertPreTrainedModel): # uses CLS vector
         batch, seq_len, hidden_dim = sequence_output.size() 
         batch, seq_len = token_type_ids_flipped.size()
         token_type_ids_flipped = torch.unsqueeze(token_type_ids_flipped,2)
-        token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.float) # need to convert to half tensor
+        token_type_ids_flipped = token_type_ids_flipped.expand(-1,-1,hidden_dim).to(dtype = torch.half) # need to convert to half tensor
         sequence_output_masked = torch.mul(sequence_output,token_type_ids_flipped) #.requires_grad_()
         if crop:
             sequence_output_masked = sequence_output_masked[:,:torch.max(query_length),:].contiguous()
