@@ -1153,7 +1153,7 @@ def main():
             train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
-        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size, num_workers = 8)
 
         # Load eval_dataloader earlier for tensorboard to have access to during training.
         if args.do_predict and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
@@ -1186,7 +1186,7 @@ def main():
                 eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
             # Run prediction for full data
             eval_sampler = SequentialSampler(eval_data)
-            eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size, num_workers=4)
+            eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size, num_workers=8)
 
 
         
@@ -1322,7 +1322,7 @@ def main():
             eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size)
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size, num_workers = 8)
 
         model.eval()
         all_results = []
