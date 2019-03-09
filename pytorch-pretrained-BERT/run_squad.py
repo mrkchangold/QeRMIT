@@ -47,13 +47,6 @@ else:
     import pickle
 
 import csv # added_flag
-from tensorboardX import SummaryWriter
-import util
-from ujson import load as json_load
-import setup_chris as setup
-from collections import Counter
-
-
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -173,7 +166,6 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                 if is_training:
                     if version_2_with_negative:
                         is_impossible = qa["is_impossible"]
-                        #this is a hack to get somewhat of a F1 score, because you are using the first answer instead of all 3.
                     if (len(qa["answers"]) != 1) and (not is_impossible):
                         raise ValueError(
                             "For training, each question should have exactly 1 answer.")
@@ -795,88 +787,6 @@ def _compute_softmax(scores):
         probs.append(score / total_sum)
     return probs
 
-def evaluate(model, data_loader, device, eval_file, max_len, use_squad_v2, eval_features, eval_examples, batch_size):
-    nll_meter = util.AverageMeter()
-
-    model.eval()
-    pred_dict = {}
-    # get eval data set in the right format for util.convert_tokens
-    word_counter, char_counter = Counter(), Counter()
-    dev_examples, dev_eval = setup.process_file(eval_file, "dev", word_counter, char_counter)
-    gold_dict = dev_eval
-    logger.info("Start evaluating")
-    with torch.no_grad(), \
-         tqdm(total=len(data_loader.dataset)) as progress_bar:
-        for input_ids, input_mask, segment_ids, segment_ids_flipped, query_length, example_indices in data_loader: # added_flag segment_ids_flipped, query_length
-            # Setup for forward
-            input_ids = input_ids.to(device)
-            input_mask = input_mask.to(device)
-            segment_ids = segment_ids.to(device)
-            segment_ids_flipped = segment_ids_flipped.to(device) # added_flag
-            query_length = query_length.to(device) # added_flag
-            eval_feature = []
-            eval_example = []
-            with torch.no_grad():
-                batch_start_logits, batch_end_logits = model(input_ids, segment_ids, segment_ids_flipped, query_length, input_mask) # added_flag
-            for i, example_index in enumerate(example_indices):
-                eval_feature_temp = eval_features[example_index.item()]
-                eval_example_temp = eval_examples[example_index.item()]
-                #print(eval_feature_temp)
-                #print(eval_feature_temp.start_position, "+ end position: ", eval_feature_temp.end_position)
-                #print("unique id: ", eval_feature_temp.unique_id)
-                eval_feature.append(eval_feature_temp)
-                eval_example.append(eval_example_temp)
-
-            start_logits = batch_start_logits.detach()
-            end_logits = batch_end_logits.detach()
-            #print(eval_feature)
-            unique_id = [f.unique_id for f in eval_feature]
-            start_position = torch.tensor([int(f.start_position) for f in eval_feature], dtype = torch.long)
-            end_position = torch.tensor([int(f.end_position) for f in eval_feature], dtype = torch.long)
-
-            start_position, end_position = start_position.to(device), end_position.to(device)
-
-            loss = torch.nn.functional.nll_loss(start_logits, start_position) + torch.nn.functional.nll_loss(end_logits, end_position)
-            nll_meter.update(loss.item(), batch_size)
-
-            # Get F1 and EM scores. Gotta convert logits to probabilities otherwise the function will complain.
-            #p1, p2 = start_logits.exp(), end_logits.exp()
-            odds1, odds2 = start_logits.exp(), end_logits.exp()
-            p1, p2 = odds1 / (1.0 + odds1), odds2 / (1.0 + odds2)
-            starts, ends = util.discretize(p1, p2, max_len, use_squad_v2)
-
-            # Log info
-            progress_bar.update(batch_size)
-            progress_bar.set_postfix(NLL=nll_meter.avg)
-
-            #print(type(gold_dict))
-            #for key, item in gold_dict.items():
-            #    print("key: ", key, "item: ", item)
-            #print("starts: ", starts.tolist(), "ends: ", ends.tolist())
-            #for qid, y_start, y_end in zip(unique_id, starts.tolist(), ends.tolist()):
-#                print("spans: ", gold_dict[str(qid)]["spans"])
-#                print("context: ", gold_dict[str(qid)]["context"])
-#                print("unique_id: ", str(qid))
-
-            preds, _ = util.convert_tokens(gold_dict,
-                                           unique_id,
-                                           starts.tolist(),
-                                           ends.tolist(),
-                                           use_squad_v2)
-            pred_dict.update(preds)
-
-    model.train()
-
-    results = util.eval_dicts(gold_dict, pred_dict, use_squad_v2)
-    results_list = [('NLL', nll_meter.avg),
-                    ('F1', results['F1']),
-                    ('EM', results['EM'])]
-    if use_squad_v2:
-        results_list.append(('AvNA', results['AvNA']))
-    results = OrderedDict(results_list)
-
-    return results, pred_dict
-
 def main():
     parser = argparse.ArgumentParser()
 
@@ -959,8 +869,6 @@ def main():
                         help="If null_score - best_non_null is greater than the threshold predict null.")
     args = parser.parse_args()
 
-
-
     if args.local_rank == -1 or args.no_cuda:
         device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
         n_gpu = torch.cuda.device_count()
@@ -1006,7 +914,6 @@ def main():
         tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=args.do_lower_case) # added_flag, currently hardcoded
     else: # added_flag, currently hardcoded
         tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
-
 
 
     train_examples = None
@@ -1151,52 +1058,7 @@ def main():
             train_sampler = DistributedSampler(train_data)
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
 
-        # Load eval_dataloader earlier for tensorboard to have access to during training.
-##        if args.do_predict and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
-##            # Need to set is_training to True even though it's not training because otherwise when loading in the examples and features
-##            # start_position and end_position will always be None cause it's not set for dev
-##            eval_examples = read_squad_examples(
-##                input_file=args.predict_file, is_training=True, version_2_with_negative=args.version_2_with_negative)
-##            eval_features = convert_examples_to_features(
-##                examples=eval_examples,
-##                tokenizer=tokenizer,
-##                max_seq_length=args.max_seq_length,
-##                doc_stride=args.doc_stride,
-##                max_query_length=args.max_query_length,
-##                is_training=True)
-##
-##            #logger.info("***** Running predictions *****")
-##            #logger.info("  Num orig examples = %d", len(eval_examples))
-##            #logger.info("  Num split examples = %d", len(eval_features))
-##            #logger.info("  Batch size = %d", args.predict_batch_size)
-##
-##            all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
-##            all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
-##            all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
-##            all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
-##            if not args.OG: # added_flag
-##                all_query_length = torch.tensor([f.query_length for f in eval_features], dtype=torch.long) # added_flag
-##                all_segment_ids_flipped = torch.tensor([f.segment_ids_flipped for f in eval_features], dtype=torch.long) # added_flag
-##                eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_segment_ids_flipped, all_query_length, all_example_index) # added_flag all_segment_ids_flipped, all_query_length
-##            else:
-##                eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
-##            # Run prediction for full data
-##            eval_sampler = SequentialSampler(eval_data)
-##            eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size, num_workers=8)
-
-
-         
-        #initialize tensorboard writer
-        writer = SummaryWriter('./save/')
-
         model.train()
-
-        #get a bunch of stuff for tensorboard checkpoint writing
-        #ema = util.EMA(model, 0.999)
-        #get saver
-        #saver = util.CheckpointSaver('./save/', max_checkpoints=5, metric_name='F1', maximize_metric=True, log=logger)
-
-        
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 if n_gpu == 1:
@@ -1205,13 +1067,6 @@ def main():
                 if args.OG:
                     loss = model(input_ids, segment_ids, input_mask, start_positions, end_positions)
                 else:
-                    #print("input_ids: ", input_ids)
-                    #print("segment_ids: ", segment_ids)
-                    #print("segment_ids_flipped: ", segment_ids_flipped)
-                    #print("query_length: ", query_length)
-                    #print("input_mask: ", input_mask)
-                    #print("start_positions: ", start_positions)
-                    #print("end_positions: ", end_positions)
                     loss = model(input_ids, segment_ids, segment_ids_flipped, query_length, input_mask, start_positions, end_positions, freeze_bert=True) # added_flag = segment_ids_flipped
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
@@ -1232,38 +1087,6 @@ def main():
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
-                # Tensorboard write to graph
-                writer.add_scalar('train/NLL', loss, step)
-                writer.add_scalar('train/LR', optimizer.param_groups[0]['lr'], step)
-                # you can change this to toggle how often during training the model stops to predict and check EM/F1 scores.
-##                
-##                if step % 1 == 0:
-##                    #Evaluate and save checkpoint
-##                    logger.info('Evaluating at step {}...'.format(step))
-##                    ema.assign(model)
-##                    # F1 scores here are not 100% accurate because we are only comparing to the first correct answer span, not all correct answer spans
-##                    results, pred_dict = evaluate(model, eval_dataloader, device, args.predict_file, 15, True, eval_features, eval_examples, args.predict_batch_size)
-##                    saver.save(step, model, results['F1'], device)
-##                    ema.resume(model)
-##
-##                    # Log to console
-##                    results_str = ', '.join('{}: {:05.2f}'.format(k, v)
-##                                            for k, v in results.items())
-##                    logger.info('Dev {}'.format(results_str))
-##
-##                    # Log to TensorBoard
-##                    logger.info('Visualizing in TensorBoard...')
-##                    for k, v in results.items():
-##                        writer.add_scalar('dev/{}'.format(k), v, step)
-##                    util.visualize(writer,
-##                                   pred_dict=pred_dict,
-##                                   eval_path=args.predict_file,
-##                                   step=step,
-##                                   split='dev',
-##                                   num_visuals=20)
-##                    
-
-                    
 
     if args.do_train:
         # Save a trained model and the associated configuration
@@ -1325,7 +1148,7 @@ def main():
             eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size, num_workers = 8)
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size)
 
         model.eval()
         all_results = []
