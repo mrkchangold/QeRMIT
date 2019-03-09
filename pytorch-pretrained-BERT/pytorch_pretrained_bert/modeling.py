@@ -1216,7 +1216,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # new representation is a residual connection of the element-wise multiplication
         # idea is that a dot product between two vectors can accurately represent similarity. 
         # Then feedfwd layer retains the information from the original sequence output
-        sequence_output = torch.cat((sequence_output, q_representation, torch.mul(q_representation,sequence_output)), dim=2)
+        #sequence_output = torch.cat((sequence_output, q_representation, torch.mul(q_representation,sequence_output)), dim=2)
 
 
         # print(sequence_output.is_contiguous()) # True

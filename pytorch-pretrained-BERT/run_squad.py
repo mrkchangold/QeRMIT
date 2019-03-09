@@ -174,9 +174,9 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                     if version_2_with_negative:
                         is_impossible = qa["is_impossible"]
                         #this is a hack to get somewhat of a F1 score, because you are using the first answer instead of all 3.
-#                    if (len(qa["answers"]) != 1) and (not is_impossible):
-#                        raise ValueError(
-#                            "For training, each question should have exactly 1 answer.")
+                    if (len(qa["answers"]) != 1) and (not is_impossible):
+                        raise ValueError(
+                            "For training, each question should have exactly 1 answer.")
                     if not is_impossible:
                         answer = qa["answers"][0]
                         orig_answer_text = answer["text"]
@@ -1205,13 +1205,13 @@ def main():
                 if args.OG:
                     loss = model(input_ids, segment_ids, input_mask, start_positions, end_positions)
                 else:
-                    print("input_ids: ", input_ids)
-                    print("segment_ids: ", segment_ids)
-                    print("segment_ids_flipped: ", segment_ids_flipped)
-                    print("query_length: ", query_length)
-                    print("input_mask: ", input_mask)
-                    print("start_positions: ", start_positions)
-                    print("end_positions: ", end_positions)
+                    #print("input_ids: ", input_ids)
+                    #print("segment_ids: ", segment_ids)
+                    #print("segment_ids_flipped: ", segment_ids_flipped)
+                    #print("query_length: ", query_length)
+                    #print("input_mask: ", input_mask)
+                    #print("start_positions: ", start_positions)
+                    #print("end_positions: ", end_positions)
                     loss = model(input_ids, segment_ids, segment_ids_flipped, query_length, input_mask, start_positions, end_positions, freeze_bert=True) # added_flag = segment_ids_flipped
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
