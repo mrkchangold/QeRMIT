@@ -1176,6 +1176,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # TODO check with Google if it's normal there is no dropout on the token classifier of SQuAD in the TF version
         # self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.QEmbedder = QEmbeddings(embed_size = config.hidden_size) # added_flag
+        self.intermediate_layer = nn.Linear(config.hidden_size, config.hidden_size) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models
         self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models
         # self.qa_outputs2 = nn.Linear(config.hidden_size*2, 2) # added_flag x 2: This is temporary until char embeddings come in
         
@@ -1215,14 +1216,15 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         # new representation is a residual connection of the element-wise multiplication
         # idea is that a dot product between two vectors can accurately represent similarity. 
         # Then feedfwd layer retains the information from the original sequence output
-        sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
-
+        # sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
+        sequence_output = q_representation + sequence_output
 
         # print(sequence_output.is_contiguous()) # True
         # sequence_output = sequence_output.contiguous()
         # TODO: bring up character embed (SKIPPED FOR NOW)
 
         # concat vectors
+        sequence_output = self.intermediate_layer(sequence_output)
         logits = self.qa_outputs(sequence_output)
         # logits = self.qa_outputs(sequence_output) # dbg_flag NOTE: from 03032019 model
         start_logits, end_logits = logits.split(1, dim=-1)
