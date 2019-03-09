@@ -164,6 +164,7 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                 char_to_word_offset.append(len(doc_tokens) - 1)
 
             for qa in paragraph["qas"]:
+                qas_id = qa["id"]
                 question_text = qa["question"]
                 start_position = None
                 end_position = None
