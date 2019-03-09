@@ -1183,6 +1183,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
 
     def forward(self, input_ids, token_type_ids=None, token_type_ids_flipped=None, query_length=None, attention_mask=None, start_positions=None, end_positions=None, freeze_bert=False): # added flag token_type_ids_flipped=None, query_length=None
         # 1. apply pretrained BERT layer
+        print(input_ids)
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
         batch, seq_len, hidden_dim = sequence_output.size()
         # sequence_output.requires_grad_(False) # RuntimeError: you can only change requires_grad flags of leaf variables.
