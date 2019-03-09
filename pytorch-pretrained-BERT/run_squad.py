@@ -1025,17 +1025,17 @@ def main():
 
     # Prepare model
     if args.model2:
-        model = BertForQuestionAnswering2.from_pretrained(args.bert_model,
-            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+        model = BertForQuestionAnswering2.from_pretrained(args.bert_model)
+            #cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
     elif args.model3:
-        model = BertForQuestionAnswering3.from_pretrained(args.bert_model,
-            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+        model = BertForQuestionAnswering3.from_pretrained(args.bert_model)
+            #cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
     elif args.OG:
-        model = BertForQuestionAnswering_OG.from_pretrained(args.bert_model,
-            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+        model = BertForQuestionAnswering_OG.from_pretrained(args.bert_model)
+            #cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
     else:
-        model = BertForQuestionAnswering.from_pretrained(args.bert_model,
-            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
+        model = BertForQuestionAnswering.from_pretrained(args.bert_model)
+            #cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank)))
 
     # FREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEZE!
     if args.freeze_BERT_embed: # added_flag FREEZE!
