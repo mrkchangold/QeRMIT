@@ -1056,9 +1056,19 @@ def main():
             train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
-        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size, num_workers = 4)
+
+        # initialize tensorboard writer
+        writer = SummaryWriter('./save')
 
         model.train()
+
+        #get a bunch of stuff for tensorboard checkpoint writing
+        ema = util.EMA(model, 0.999)
+        #get saver
+        saver = util.CheckpointSaver('./save', max_checkpoints=5, metric_name = 'F1', maximize_metric=True, log=logger)
+
+        
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 if n_gpu == 1:
@@ -1087,6 +1097,10 @@ def main():
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
+                #Tensorboard write to graph
+                writer.add_scalar('train/NLL', loss, step)
+                writer.add_scalar('train/LR', optimizer.param_groups[0]['lr'], step)
+                                                                    
 
     if args.do_train:
         # Save a trained model and the associated configuration
@@ -1148,7 +1162,7 @@ def main():
             eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size)
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size, num_workers = 8)
 
         model.eval()
         all_results = []
