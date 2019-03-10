@@ -47,6 +47,11 @@ else:
     import pickle
 
 import csv # added_flag
+from tensorboardX import SummaryWriter
+import util
+from ujson import load as json_load
+import setup_chris as setup
+from collections import Counter
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -1058,7 +1063,17 @@ def main():
             train_sampler = DistributedSampler(train_data)
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
 
+        # initialize tensorboard writer
+        writer = SummaryWriter('./save')
+
         model.train()
+
+        #get a bunch of stuff for tensorboard checkpoint writing
+        ema = util.EMA(model, 0.999)
+        #get saver
+        saver = util.CheckpointSaver('./save', max_checkpoints=5, metric_name = 'F1', maximize_metric=True, log=logger)
+
+        
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 if n_gpu == 1:
@@ -1087,6 +1102,10 @@ def main():
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
+                #Tensorboard write to graph
+                writer.add_scalar('train/NLL', loss, step)
+                writer.add_scalar('train/LR', optimizer.param_groups[0]['lr'], step)
+                                                                    
 
     if args.do_train:
         # Save a trained model and the associated configuration

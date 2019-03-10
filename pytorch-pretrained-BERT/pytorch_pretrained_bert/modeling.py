@@ -1335,6 +1335,7 @@ class BertForQuestionAnswering3(BertPreTrainedModel): # uses CLS vector
     def __init__(self, config):
         super(BertForQuestionAnswering3, self).__init__(config)
         self.bert = BertModel(config)
+        self.intermediate_layer = nn.Linear(config.hidden_size*3, config.hidden_size) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models
         self.qa_outputs = nn.Linear(config.hidden_size, 2) # NOTE: THIS CANNOT CHANGE from the 03032019 model because of how the system loads models        
         self.apply(self.init_bert_weights)
 
@@ -1347,12 +1348,14 @@ class BertForQuestionAnswering3(BertPreTrainedModel): # uses CLS vector
         q_representation = sequence_output[:,0,:] # takes the CLS vector
         q_representation = torch.unsqueeze(q_representation,1)
         q_representation = q_representation.expand(-1,seq_len,-1)
-        sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
-
+        #sequence_output = nn.ReLU()(torch.mul(q_representation,sequence_output) + sequence_output)
+        sequence_output = torch.cat((sequence_output, q_representation, torch.mul(q_representation,sequence_output)), dim=2)
 
         # print(sequence_output.is_contiguous()) # True
         # sequence_output = sequence_output.contiguous()
         # TODO: bring up character embed (SKIPPED FOR NOW)
+        sequence_output = self.intermediate_layer(sequence_output)
+
 
         # concat vectors
         logits = self.qa_outputs(sequence_output)
