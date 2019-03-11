@@ -1,0 +1,326 @@
+********************************useful commands***************************************
+scp -r  boss@40.80.149.205:/tmp/debug_squad/ /home/mrkchang/Documents/Stanford/CS224N/fromVM
+
+git config --global credential.helper cache
+git config --global credential.helper 'cache --timeout=7200'
+
+nvidia-smi
+tmux new -s [name]
+ctrl - b - [
+tmux list-sessions
+^b = cntrl-b
+cntrl - b - d
+$ tmux a -t [name]
+$ tmux a -t #
+
+sudo prime-select intel
+sudo prime-select nvidia
+prime-select query
+
+rm = remove CAREFUL!!
+mv = move/rename
+***********************************************************************
+python train.py   --bert_model bert-base-uncased   --do_train   --do_predict   --do_lower_case   --train_file ./data/train-v2.0.json   --predict_file ./data/dev-v2.0.json   --train_batch_size 12   --learning_rate 3e-5   --num_train_epochs 2.0   --max_seq_length 384   --doc_stride 128   --output_dir ./tmp/debug_squad/ --version_2_with_negative
+
+
+
+
+
+data_path (str): Path to .npz file containing pre-processed dataset.
+dataset = np.load(data_path)
+self.ids = torch.from_numpy(dataset['ids']).long()
+
+python test_bidaf.py --split dev --load_path save/train/baseline-01/step_1951227.pth.tar  --name dbging
+
+python run_squad.py   --bert_model bert-base-uncased   --do_train   --do_predict   --do_lower_case   --train_file ./data/train-v2.0.json   --predict_file ./data/dev-v2.0.json   --train_batch_size 24   --learning_rate 3e-5   --num_train_epochs 2.0   --max_seq_length 384   --doc_stride 128   --output_dir /tmp/debug_squad_redo_from_run_squad/ --version_2_with_negative --fp16 --loss_scale 128
+
+
+#remember
+scp -r /home/mrkchang/Documents/Stanford/CS224N/cs224n-project/data  boss@40.80.149.205:~/hugface/hugface/pytorch-pretrained-BERT/
+
+#transfer from vm to my local laptop model parameters
+scp -r boss@13.77.171.174:~/models_squad/ /Users/diai/Documents/CS_224N_NLP/Project_Local/models_squad
+
+scp -r boss@40.80.149.205:~/models_squad/debug_squad_baseline_03092019_cls /Users/diai/Documents/CS_224N_NLP/Project_Local/models_squad/
+
+
+#diai local export functions
+export squad_dir=~/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data
+export model_dir=~/Documents/CS_224N_NLP/Project_Local/models_squad/models_squad
+export output_dir=~/Documents/CS_224N_NLP/Project_Local/models_squad/models_squad/debug_squad_baseline_03072019_cnn
+
+#diai run on vm scripts
+#cnn model
+python run_squad.py --bert_model bert-large-uncased --do_train --do_predict --do_lower_case --train_file $squad_dir/train-v2.0.json --predict_file $squad_dir/dev-v2.0.json --learning_rate 3e-4 --num_train_epochs 2.0 --max_seq_length 384 --doc_stride 128 --output_dir $output_dir/debug_squad_baseline_03082018_cnn --train_batch_size 4 --gradient_accumulation_steps 2 --fp16 --loss_scale 128 --version_2_with_negative --new_model --cache_example &> train_cnn_output.txt
+
+#cls model
+export squad_dir=~/QeRMIT/pytorch-pretrained-BERT/data
+export output_dir=~/models_squad
+
+#batch size for base and seq length 384 is 12 for 12 GB of ram. We have only 8 GB for each M60 GPU.
+
+python run_squad.py --bert_model bert-base-uncased --do_train --do_predict --do_lower_case --train_file $squad_dir/train-v2.0.json --predict_file $squad_dir/dev-v2.0.json --learning_rate 3e-4 --num_train_epochs 2.0 --max_seq_length 384 --doc_stride 128 --output_dir $output_dir/debug_squad_baseline_03092019_cls --train_batch_size 24 --gradient_accumulation_steps 4 --version_2_with_negative --new_model --cache_example --model3 &> train_cls_output.txt
+
+#cls model Bert base f1 and em scores
+Submission successful
+Scores (Improvement): 
+EM: 64.988 (-12.537) 
+F1: 68.148 (-12.258)
+
+#command to transfer files over from cns to desktop
+rm -R ~/Desktop/models_squad/train_default_v2/
+mkdir ~/Desktop/models_squad/train_default_v2/
+fileutil cp -R /cns/os-d/home/diai/public/bert_output/squadv2.0/train_default_v2/*.csv ~/Desktop/models_squad/train_default_v2/
+fileutil cp -R /cns/os-d/home/diai/public/bert_output/squadv2.0/train_default_v2/*.json ~/Desktop/models_squad/train_default_v2/
+
+#transfer files from desktop to laptop
+scp -r diai@diai.mtv.corp.google.com:~/Desktop/models_squad/train_default_v2/ /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/submission_files/bert_large_baseline
+
+
+# Google Borg Commands to run BERT on TPU
+g4d tensorflow_tpu
+alias allocator_borgcfg='/google/data/ro/teams/traino/borgcfg'
+blaze build --copt=-mavx --define=tpu_hardware=true -c opt experimental/users/diai/language/bert:run_squad_google.par
+allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/google/train_squad_tpu.borg reload --vars=exp_name=train_default_v2,version_2_with_negative=true
+
+# Select threshold for null versus non-null answer
+alias output_dir='~/Desktop/models_squad/train_default_v2'
+python ~/Desktop/lumiere/squad/evaluate-v2.0.py ~/Desktop/models_squad/data/dev-v2.0.json ~/Desktop/models_squad/train_default_v2/predictions.json --na-prob-file ~/Desktop/models_squad/train_default_v2/null_odds.json
+# Get predictions with new threshold like this:
+allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/google/train_squad_tpu.borg reload --vars=exp_name=train_default_v2,version_2_with_negative=true,do_train=false,null_score_diff_threshold=-5.374411344528198
+
+
+# threshold scores on original dev set.
+{
+  "exact": 77.13299081950645, 
+  "f1": 80.37971293567406, 
+  "total": 11873, 
+  "HasAns_exact": 76.38326585695006, 
+  "HasAns_f1": 82.8860208645848, 
+  "HasAns_total": 5928, 
+  "NoAns_exact": 77.88057190916737, 
+  "NoAns_f1": 77.88057190916737, 
+  "NoAns_total": 5945, 
+  "best_exact": 78.37109407900277, 
+  "best_exact_thresh": -5.374411344528198, 
+  "best_f1": 81.14082103554928, 
+  "best_f1_thresh": -2.325418710708618
+}
+
+# threshold scores on our CS224N dev set.
+{
+  "exact": 77.31161566304705, 
+  "f1": 80.24336841642369, 
+  "total": 6078, 
+  "HasAns_exact": 78.10996563573883, 
+  "HasAns_f1": 84.23339973712166, 
+  "HasAns_total": 2910, 
+  "NoAns_exact": 76.57828282828282, 
+  "NoAns_f1": 76.57828282828282, 
+  "NoAns_total": 3168, 
+  "best_exact": 79.13787430075683, 
+  "best_exact_thresh": -5.374411344528198, 
+  "best_f1": 81.59913492960295, 
+  "best_f1_thresh": -5.374411344528198
+}
+
+# BERT SCORES
+# BERT BASELINE
+Submission successful
+Scores (Improvement): 
+EM: 77.312 (-0.971) 
+F1: 80.243 (-0.826)
+
+# BERT BASELINE WITH NO ANSWER TUNING THEIR DEV SET
+Submission successful
+Scores (Improvement): 
+EM: 78.282 (+0.757) 
+F1: 81.069 (+0.663)
+
+# BERT BASELINE WITH NO ANSWER TUNING THRESHOLD OUR CS224N DEV SET
+
+
+
+
+# count_lengths.py python file run flags/commands/arguments
+python count_lengths.py --json_file /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/train_small.json
+
+
+
+
+export squad_dir=~/hugface/hugface/pytorch-pretrained-BERT/data
+
+#normal <- I think this ran out of memory
+python run_squad.py \
+  --bert_model bert-base-uncased \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --train_batch_size 12 \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2.0 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir /tmp/debug_squad/
+
+# below is for using fp16
+# more changes to accommodate smaller memory
+python run_squad.py \
+  --bert_model bert-large-uncased \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir /tmp/debug_squad/ \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4
+
+
+
+
+# for predicting on dev set given a certain model dir
+export squad_dir=~/hugface/hugface/pytorch-pretrained-BERT/data
+export model_dir=~/tmp/debug_squad/
+
+python run_squad.py \
+  --bert_model $model_dir \
+  --do_predict \
+  --do_lower_case \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --doc_stride 128 \
+  --output_dir $model_dir/output/ \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4
+
+# for iterating on model test
+export squad_dir=~/hugface/hugface/pytorch-pretrained-BERT/data
+export model_dir=~/tmp/debug_squad/
+
+python run_squad.py \
+  --bert_model $model_dir \
+  --do_predict \
+  --do_lower_case \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --doc_stride 128 \
+  --output_dir $model_dir/output/ \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed
+
+# for iterating on training the model...
+python run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $model_dir/output/ \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4
+  --freeze_BERT_embed
+
+
+
+*****************************CUSTOM scripts***********************************
+0. Used to create baseline model for single layer
+python run_squad.py   --bert_model bert-large-uncased   --do_train   --do_predict   --do_lower_case   --train_file $squad_dir/train-v2.0.json   --predict_file $squad_dir/dev-v2.0.json   --learning_rate 3e-5   --num_train_epochs 2   --max_seq_length 384   --doc_stride 128   --output_dir /tmp/debug_squad/   --train_batch_size 8   --fp16   --loss_scale 128   --version_2_with_negative   --gradient_accumulation_steps 4 --freeze_BERT_embed
+
+
+0.1. Download file to local
+scp -r  boss@40.80.149.205:/tmp/debug_squad/ /home/mrkchang/Documents/Stanford/CS224N/fromVM
+
+0.2 Rename folder and move it in VM
+export latest_model_dir=~/hugface/debug_squad_baseline_03032019
+
+1. To create smaller dataset
+export data_dir=/home/mrkchang/Documents/Stanford/CS224N/hugface/pytorch-pretrained-BERT/data
+python data_manipulator.py  --json_file $data_dir/dev-v2.0.json   --output_dir $data_dir --create_dbg --threshold 0.1 --output_file dev_small.json
+
+python data_manipulator.py  --json_file $data_dir/train-v2.0.json   --output_dir $data_dir --create_dbg --threshold 0.1 --output_file train_small.json
+
+2. To create csv from json
+export output_dir=/home/mrkchang/Documents/Stanford/CS224N/hugface/pytorch-pretrained-BERT/tmp/debug_squad_baseline_03032019
+
+python json2csv.py --json_file $output_dir/predictions.json --output_dir $output_dir
+
+Submitted:
+EM: 77.526 (+77.526)
+F1: 80.407 (+80.407)
+
+optional. To dbg locally
+export squad_dir=./data
+export dbg_dir=./tmp/debug
+python run_squad.py \
+  --bert_model bert-base-uncased \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/dbg_sampled.json \
+  --predict_file $squad_dir/dbg_sampled.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $dbg_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed
+ 
+3. For debugging on new model...
+tmux a -t returnOfTheKing
+export squad_dir=~/hugface/hugface/pytorch-pretrained-BERT/data
+export model_dir=~/hugface/debug_squad_baseline_03032019
+export output_dir=~/hugface/debug_squad_baseline_03032019_cnn
+python run_squad.py \
+  --bert_model $model_dir \
+  --do_train \
+  --do_predict \
+  --do_lower_case \
+  --train_file $squad_dir/train-v2.0.json \
+  --predict_file $squad_dir/dev-v2.0.json \
+  --learning_rate 3e-5 \
+  --num_train_epochs 2 \
+  --max_seq_length 384 \
+  --doc_stride 128 \
+  --output_dir $output_dir \
+  --train_batch_size 8 \
+  --fp16 \
+  --loss_scale 128 \
+  --version_2_with_negative \
+  --gradient_accumulation_steps 4 \
+  --freeze_BERT_embed \
+  --new_model
+
+4. After it's ready more get rid of --new_model --cache_example to save time <- preprocessing data
+# TRAINING again
+export squad_dir=~/hugface/hugface/pytorch-pretrained-BERT/data
+export model_dir=~/hugface/debug_squad_baseline_03032019
+export output_dir=~/hugface/debug_squad_baseline_03032019_cnn
+python run_squad.py   --bert_model $model_dir   --do_train   --do_predict   --do_lower_case   --train_file $squad_dir/train-v2.0.json   --predict_file $squad_dir/dev-v2.0.json   --learning_rate 3e-5   --num_train_epochs 2   --max_seq_length 384   --doc_stride 128   --output_dir $output_dir   --train_batch_size 4   --fp16   --loss_scale 128   --version_2_with_negative   --gradient_accumulation_steps 4   --freeze_BERT_embed
+
+
