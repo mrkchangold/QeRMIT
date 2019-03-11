@@ -72,9 +72,10 @@ rm -R ~/Desktop/models_squad/train_default_v2/
 mkdir ~/Desktop/models_squad/train_default_v2/
 fileutil cp -R /cns/os-d/home/diai/public/bert_output/squadv2.0/train_default_v2/*.csv ~/Desktop/models_squad/train_default_v2/
 fileutil cp -R /cns/os-d/home/diai/public/bert_output/squadv2.0/train_default_v2/*.json ~/Desktop/models_squad/train_default_v2/
+fileutil cp -R /cns/os-d/home/diai/public/bert_output/squadv2.0/train_default_v2/*tf* ~/Desktop/models_squad/train_default_v2/
 
 #transfer files from desktop to laptop
-scp -r diai@diai.mtv.corp.google.com:~/Desktop/models_squad/train_default_v2/ /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/submission_files/bert_large_baseline
+scp -r diai@diai.mtv.corp.google.com:~/Desktop/models_squad/train_default_v2/ /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/submission_files/bert_large
 
 
 # Google Borg Commands to run BERT on TPU
@@ -87,7 +88,7 @@ allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/goog
 alias output_dir='~/Desktop/models_squad/train_default_v2'
 python ~/Desktop/lumiere/squad/evaluate-v2.0.py ~/Desktop/models_squad/data/dev-v2.0.json ~/Desktop/models_squad/train_default_v2/predictions.json --na-prob-file ~/Desktop/models_squad/train_default_v2/null_odds.json
 # Get predictions with new threshold like this:
-allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/google/train_squad_tpu.borg reload --vars=exp_name=train_default_v2,version_2_with_negative=true,do_train=false,null_score_diff_threshold=-5.374411344528198
+allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/google/train_squad_tpu.borg reload --vars=exp_name=train_default_v2,version_2_with_negative=true,do_train=false,null_score_diff_threshold=-5.584860801696777
 
 
 # threshold scores on original dev set.
@@ -124,20 +125,79 @@ allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/goog
   "best_f1_thresh": -5.374411344528198
 }
 
+# Threshold scores for max_seq_len 512
+{
+  "exact": 77.36097400460677, 
+  "f1": 80.33378036270929, 
+  "total": 6078, 
+  "HasAns_exact": 78.10996563573883, 
+  "HasAns_f1": 84.31914675070372, 
+  "HasAns_total": 2910, 
+  "NoAns_exact": 76.67297979797979, 
+  "NoAns_f1": 76.67297979797979, 
+  "NoAns_total": 3168, 
+  "best_exact": 79.12142152023692, 
+  "best_exact_thresh": -5.584860801696777, 
+  "best_f1": 81.58470072551658, 
+  "best_f1_thresh": -5.584860801696777
+}
+
+# Threshold scores for max_seq_len 512, max_ans_len and max_query_len of 256
+{
+  "exact": 77.27871010200724, 
+  "f1": 80.27535735105508, 
+  "total": 6078, 
+  "HasAns_exact": 77.9381443298969, 
+  "HasAns_f1": 84.19712095522796, 
+  "HasAns_total": 2910, 
+  "NoAns_exact": 76.67297979797979, 
+  "NoAns_f1": 76.67297979797979, 
+  "NoAns_total": 3168, 
+  "best_exact": 79.05561039815728, 
+  "best_exact_thresh": -5.584860801696777, 
+  "best_f1": 81.55109051728252, 
+  "best_f1_thresh": -5.584860801696777
+}
+
 # BERT SCORES
-# BERT BASELINE
+# BERT LARGE
 Submission successful
 Scores (Improvement): 
 EM: 77.312 (-0.971) 
 F1: 80.243 (-0.826)
 
-# BERT BASELINE WITH NO ANSWER TUNING THEIR DEV SET
+# BERT LARGE WITH NO ANSWER TUNING THEIR DEV SET
 Submission successful
 Scores (Improvement): 
 EM: 78.282 (+0.757) 
 F1: 81.069 (+0.663)
 
-# BERT BASELINE WITH NO ANSWER TUNING THRESHOLD OUR CS224N DEV SET
+# BERT LARGE WITH NO ANSWER TUNING THRESHOLD OUR CS224N DEV SET
+Submission successful
+Scores (Improvement): 
+EM: 79.138 (+0.856) 
+F1: 81.599 (+0.530)
+
+# BERT LARGE WITH MAX_SEQ LENGTH OF 512 instead of 384
+Submission successful
+Scores (Improvement): 
+EM: 77.361 (-1.777) 
+F1: 80.334 (-1.265)
+
+# BERT LARGE WITH MAX_SEQ LENGTH OF 512 instead of 384 and no answer tuning
+Submission successful
+Scores (Improvement): 
+EM: 79.121 (-0.016) 
+F1: 81.585 (-0.014)
+
+# BERT LARGE WITH MAX QUERY of 256, MAX_SEQ of 512, AND MAX ANSWER LEN OF 256
+Submission successful
+Scores (Improvement): 
+EM: 77.279 (-1.859) 
+F1: 80.275 (-1.324)
+
+# BERT LARGE WITH MAX QUERY of 256, MAX_SEQ of 512, AND MAX ANSWER LEN OF 256 and no answer tuning
+
 
 
 
