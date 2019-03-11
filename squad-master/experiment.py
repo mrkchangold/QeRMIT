@@ -1,8 +1,4 @@
-"""Train a model on SQuAD.
-
-Author:
-    Chris Chute (chute@stanford.edu)
-"""
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import random
@@ -23,7 +19,6 @@ from tqdm import tqdm
 from ujson import load as json_load
 from util import collate_fn, SQuAD
 
-from __future__ import absolute_import, division, print_function
 
 import argparse
 import collections
@@ -44,7 +39,7 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
 from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
-from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertForQuestionAnswering2, BertForQuestionAnswering3, BertForQuestionAnswering_OG, BertConfig, WEIGHTS_NAME, CONFIG_NAME
+from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
                                                   BertTokenizer,
@@ -59,19 +54,24 @@ import csv # added_flag
 from tensorboardX import SummaryWriter
 import util
 from ujson import load as json_load
-import setup_chris as setup
+# import setup_chris as setup
 from collections import Counter
+from run_squad import read_squad_examples
 
-def main():
+def tokenizer():
     train_examples = read_squad_examples(
-        input_file=args.train_file, is_training=True, version_2_with_negative=args.version_2_with_negative)
-
-    for (example_index, example) in enumerate(examples):
-        tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True)
-    input_ids = tokenizer.convert_tokens_to_ids(tokens)
+        input_file='./data/train-v2.0.json', is_training=True, version_2_with_negative=True)
+    tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True)
+    
+    for (example_index, example) in enumerate(train_examples):
+        query_tokens = tokenizer.tokenize(example.question_text)
+        print(query_tokens)
+        
+        input_ids = tokenizer.convert_tokens_to_ids(query_tokens)
+        print(input_ids)
 
 if __name__ == '__main__':
-    main()
+    tokenizer()
 
 
     # features = []

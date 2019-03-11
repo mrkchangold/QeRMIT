@@ -24,6 +24,13 @@ from subprocess import run
 from tqdm import tqdm
 from zipfile import ZipFile
 
+from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
+                                                  BertTokenizer,
+                                                  whitespace_tokenize)
+from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME, BertModel
+
+import collections
+
 
 def download_url(url, output_path, show_progress=True):
     class DownloadProgressBar(tqdm):
@@ -94,15 +101,32 @@ def process_file(filename, data_type, word_counter, char_counter):
     examples = []
     eval_examples = {}
     total = 0
+    tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True) ######################################################
     with open(filename, "r") as fh:
         source = json.load(fh)
         for article in tqdm(source["data"]):
+            ################################################
+            
+            
+            _DocSpan = collections.namedtuple(  # pylint: disable=invalid-name
+                "DocSpan", ["start", "length"])
+            doc_spans = []
+
+
+
+
+            ################################################
             for para in article["paragraphs"]:
+                # para = tokenizer.tokenize(para) #####################################################
                 context = para["context"].replace(
                     "''", '" ').replace("``", '" ')
-                context_tokens = word_tokenize(context)
+                # context_tokens = word_tokenize(context) # added_flag
+                context_tokens = tokenizer.tokenize(context) # added_flag
                 context_chars = [list(token) for token in context_tokens]
-                spans = convert_idx(context, context_tokens)
+                # spans = convert_idx(context, context_tokens)
+                spans = convert_idx(" ".join(str(x) for x in context_tokens), context_tokens)
+                # print("spans")
+                # print(spans)
                 for token in context_tokens:
                     word_counter[token] += len(para["qas"])
                     for char in token:
@@ -111,7 +135,8 @@ def process_file(filename, data_type, word_counter, char_counter):
                     total += 1
                     ques = qa["question"].replace(
                         "''", '" ').replace("``", '" ')
-                    ques_tokens = word_tokenize(ques)
+                    # ques_tokens = word_tokenize(ques) # added_flag
+                    ques_tokens = tokenizer.tokenize(ques) # added_flag
                     ques_chars = [list(token) for token in ques_tokens]
                     for token in ques_tokens:
                         word_counter[token] += 1
@@ -120,14 +145,36 @@ def process_file(filename, data_type, word_counter, char_counter):
                     y1s, y2s = [], []
                     answer_texts = []
                     for answer in qa["answers"]:
+                        # print('*-----------------------------------------------------------------------***')
+                        
+                        # print("ground truth:")
+                        # print(answer_text)
                         answer_text = answer["text"]
-                        answer_start = answer['answer_start']
-                        answer_end = answer_start + len(answer_text)
+                        answer_text = tokenizer.tokenize(answer_text) #added_flag
+                        answer_start = answer['answer_start'] #this is actually the character start
+                        # print("context:")
+                        # print(tokenizer.tokenize(context))
+                        # answer_start = answer_start + offset
+
+                        # num_words_prior2answer = len(context[:answer_start].split())
+                        num_words_tokenized_prior2answer = len(tokenizer.tokenize(context[:answer_start]))
+                        answer_start_idx = num_words_tokenized_prior2answer
+                        answer_end_idx = answer_start + len(answer_text)
                         answer_texts.append(answer_text)
+                        answer_start = len(" ".join(str(x) for x in context_tokens[:answer_start_idx]))
+                        answer_end = len(" ".join(str(x) for x in context_tokens[:answer_end_idx]))
+                        # print("answer span")
+                        # print(context_tokens[answer_start:answer_end])
+                        # print('************************************************************************')
                         answer_span = []
                         for idx, span in enumerate(spans):
+                            # print(span)
                             if not (answer_end <= span[0] or answer_start >= span[1]):
                                 answer_span.append(idx)
+                                # print(idx)
+                                # print(span)
+                        
+                        
                         y1, y2 = answer_span[0], answer_span[-1]
                         y1s.append(y1)
                         y2s.append(y2)
@@ -149,18 +196,27 @@ def process_file(filename, data_type, word_counter, char_counter):
 
 
 def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, num_vectors=None):
+    #######################################################################################
+    tokenizer = tokenization.FullTokenizer(
+      vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case)
+    #######################################################################################
     print("Pre-processing {} vectors...".format(data_type))
     embedding_dict = {}
     filtered_elements = [k for k, v in counter.items() if v > limit]
     if emb_file is not None:
-        assert vec_size is not None
-        with open(emb_file, "r", encoding="utf-8") as fh:
-            for line in tqdm(fh, total=num_vectors):
-                array = line.split()
-                word = "".join(array[0:-vec_size])
-                vector = list(map(float, array[-vec_size:]))
-                if word in counter and counter[word] > limit:
-                    embedding_dict[word] = vector
+        ################################## modified #############################################
+        # assert vec_size is not None
+        # with open(emb_file, "r", encoding="utf-8") as fh:
+        #     for line in tqdm(fh, total=num_vectors):
+        #         array = line.split()
+        #         word = "".join(array[0:-vec_size])
+        #         vector = list(map(float, array[-vec_size:]))
+        #         if word in counter and counter[word] > limit:
+        #             embedding_dict[word] = vector
+        output_config_file = emb_file + '/bert_config.json'
+        config = BertConfig(output_config_file)
+        bert = BertModel(config)
+        embedding_dict = 
         print("{} / {} tokens have corresponding {} embedding vector".format(
             len(embedding_dict), len(filtered_elements), data_type))
     else:
@@ -180,66 +236,67 @@ def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, nu
     embedding_dict[OOV] = [0. for _ in range(vec_size)]
     idx2emb_dict = {idx: embedding_dict[token]
                     for token, idx in token2idx_dict.items()}
-    emb_mat = [idx2emb_dict[idx] for idx in range(len(idx2emb_dict))]
+    emb_mat = [idx2emb_dict[idx] for idx in range(len(idx2emb_get_setup_argsdict))]
     return emb_mat, token2idx_dict
 
 
-def convert_to_features(args, data, word2idx_dict, char2idx_dict, is_test):
-    example = {}
-    context, question = data
-    context = context.replace("''", '" ').replace("``", '" ')
-    question = question.replace("''", '" ').replace("``", '" ')
-    example['context_tokens'] = word_tokenize(context)
-    example['ques_tokens'] = word_tokenize(question)
-    example['context_chars'] = [list(token) for token in example['context_tokens']]
-    example['ques_chars'] = [list(token) for token in example['ques_tokens']]
+# seems like this is unused
+# def convert_to_features(args, data, word2idx_dict, char2idx_dict, is_test):
+#     example = {}
+#     context, question = data
+#     context = context.replace("''", '" ').replace("``", '" ')
+#     question = question.replace("''", '" ').replace("``", '" ')
+#     example['context_tokens'] = word_tokenize(context)
+#     example['ques_tokens'] = word_tokenize(question)
+#     example['context_chars'] = [list(token) for token in example['context_tokens']]
+#     example['ques_chars'] = [list(token) for token in example['ques_tokens']]
 
-    para_limit = args.test_para_limit if is_test else args.para_limit
-    ques_limit = args.test_ques_limit if is_test else args.ques_limit
-    char_limit = args.char_limit
+#     para_limit = args.test_para_limit if is_test else args.para_limit
+#     ques_limit = args.test_ques_limit if is_test else args.ques_limit
+#     char_limit = args.char_limit
 
-    def filter_func(example):
-        return len(example["context_tokens"]) > para_limit or \
-               len(example["ques_tokens"]) > ques_limit
+#     def filter_func(example):
+#         return len(example["context_tokens"]) > para_limit or \
+#                len(example["ques_tokens"]) > ques_limit
 
-    if filter_func(example):
-        raise ValueError("Context/Questions lengths are over the limit")
+#     if filter_func(example):
+#         raise ValueError("Context/Questions lengths are over the limit")
 
-    context_idxs = np.zeros([para_limit], dtype=np.int32)
-    context_char_idxs = np.zeros([para_limit, char_limit], dtype=np.int32)
-    ques_idxs = np.zeros([ques_limit], dtype=np.int32)
-    ques_char_idxs = np.zeros([ques_limit, char_limit], dtype=np.int32)
+#     context_idxs = np.zeros([para_limit], dtype=np.int32)
+#     context_char_idxs = np.zeros([para_limit, char_limit], dtype=np.int32)
+#     ques_idxs = np.zeros([ques_limit], dtype=np.int32)
+#     ques_char_idxs = np.zeros([ques_limit, char_limit], dtype=np.int32)
 
-    def _get_word(word):
-        for each in (word, word.lower(), word.capitalize(), word.upper()):
-            if each in word2idx_dict:
-                return word2idx_dict[each]
-        return 1
+#     def _get_word(word):
+#         for each in (word, word.lower(), word.capitalize(), word.upper()):
+#             if each in word2idx_dict:
+#                 return word2idx_dict[each]
+#         return 1
 
-    def _get_char(char):
-        if char in char2idx_dict:
-            return char2idx_dict[char]
-        return 1
+#     def _get_char(char):
+#         if char in char2idx_dict:
+#             return char2idx_dict[char]
+#         return 1
 
-    for i, token in enumerate(example["context_tokens"]):
-        context_idxs[i] = _get_word(token)
+#     for i, token in enumerate(example["context_tokens"]):
+#         context_idxs[i] = _get_word(token)
 
-    for i, token in enumerate(example["ques_tokens"]):
-        ques_idxs[i] = _get_word(token)
+#     for i, token in enumerate(example["ques_tokens"]):
+#         ques_idxs[i] = _get_word(token)
 
-    for i, token in enumerate(example["context_chars"]):
-        for j, char in enumerate(token):
-            if j == char_limit:
-                break
-            context_char_idxs[i, j] = _get_char(char)
+#     for i, token in enumerate(example["context_chars"]):
+#         for j, char in enumerate(token):
+#             if j == char_limit:
+#                 break
+#             context_char_idxs[i, j] = _get_char(char)
 
-    for i, token in enumerate(example["ques_chars"]):
-        for j, char in enumerate(token):
-            if j == char_limit:
-                break
-            ques_char_idxs[i, j] = _get_char(char)
+#     for i, token in enumerate(example["ques_chars"]):
+#         for j, char in enumerate(token):
+#             if j == char_limit:
+#                 break
+#             ques_char_idxs[i, j] = _get_char(char)
 
-    return context_idxs, context_char_idxs, ques_idxs, ques_char_idxs
+#     return context_idxs, context_char_idxs, ques_idxs, ques_char_idxs
 
 
 def is_answerable(example):
@@ -353,9 +410,12 @@ def pre_process(args):
     # Process training set and use it to decide on the word/character vocabularies
     word_counter, char_counter = Counter(), Counter()
     train_examples, train_eval = process_file(args.train_file, "train", word_counter, char_counter)
+    ############################## modified#################################
+    # word_emb_mat, word2idx_dict = get_embedding(
+    #     word_counter, 'word', emb_file=args.glove_file, vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
     word_emb_mat, word2idx_dict = get_embedding(
-        word_counter, 'word', emb_file=args.glove_file, vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
-    char_emb_mat, char2idx_dict = get_embedding(
+        word_counter, 'word', emb_file='/home/mrkchang/Documents/Stanford/CS224N/hugface/google-bert-mod/uncased_L-24_H-1024_A-16/', vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
+   char_emb_mat, char2idx_dict = get_embedding(
         char_counter, 'char', emb_file=None, vec_size=args.char_dim)
 
     # Process dev and test sets

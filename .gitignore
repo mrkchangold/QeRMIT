@@ -3,3 +3,7 @@
 *.json
 *.bin
 *.csv
+*.zip
+*.meta
+*.index
+*ckpt*

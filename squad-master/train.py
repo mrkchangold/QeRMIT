@@ -141,7 +141,7 @@ class InputFeatures(object):
         self.end_position = end_position
         self.is_impossible = is_impossible
 
-
+# added_flag
 def read_squad_examples(input_file, is_training, version_2_with_negative):
     """Read a SQuAD json file into a list of SquadExample."""
     with open(input_file, "r", encoding='utf-8') as reader:
@@ -219,7 +219,7 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                 examples.append(example)
     return examples
 
-
+# added_flag
 def convert_examples_to_features(examples, tokenizer, max_seq_length,
                                  doc_stride, max_query_length, is_training):
     """Loads a data file into a list of `InputBatch`s."""
