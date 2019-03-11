@@ -194,8 +194,7 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                             logger.warning("Could not find answer: '%s' vs. '%s'",
                                            actual_text, cleaned_answer_text)
                             continue
-                    else:
-                        start_position = -1
+                    else:convert_examples_to_featuresion = -1
                         end_position = -1
                         orig_answer_text = ""
 

@@ -11,6 +11,35 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from util import masked_softmax
 
+from modeling_hugger import BertModel, BertConfig, CONFIG_NAME, BertForQuestionAnswering
+from file_utils_hugging import PYTORCH_PRETRAINED_BERT_CACHE
+import os
+
+# this is the original embedding by chris chute
+# class Embedding(nn.Module):
+#     """Embedding layer used by BiDAF, without the character-level component.
+
+#     Word-level embeddings are further refined using a 2-layer Highway Encoder
+#     (see `HighwayEncoder` class for details).
+
+#     Args:
+#         word_vectors (torch.Tensor): Pre-trained word vectors.
+#         hidden_size (int): Size of hidden activations.
+#         drop_prob (float): Probability of zero-ing out activations
+#     """
+#     def __init__(self, word_vectors, hidden_size, drop_prob):
+#         super(Embedding, self).__init__()
+#         self.drop_prob = drop_prob
+#         self.embed = nn.Embedding.from_pretrained(word_vectors)
+#         self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
+#         self.hwy = HighwayEncoder(2, hidden_size)
+
+#     def forward(self, x):
+#         emb = self.embed(x)   # (batch_size, seq_len, embed_size)
+#         emb = F.dropout(emb, self.drop_prob, self.training)
+#         emb = self.proj(emb)  # (batch_size, seq_len, hidden_size)
+#         emb = self.hwy(emb)   # (batch_size, seq_len, hidden_size)
+#         return emb
 
 class Embedding(nn.Module):
     """Embedding layer used by BiDAF, without the character-level component.
@@ -26,18 +55,25 @@ class Embedding(nn.Module):
     def __init__(self, word_vectors, hidden_size, drop_prob):
         super(Embedding, self).__init__()
         self.drop_prob = drop_prob
-        self.embed = nn.Embedding.from_pretrained(word_vectors)
-        self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
-        self.hwy = HighwayEncoder(2, hidden_size)
+
+
+        model = BertForQuestionAnswering.from_pretrained('bert_base_uncased',
+            cache_dir=os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(1)))
+        for name, param in model.named_parameters():
+            if param in set(model.bert.parameters()):
+                param.requires_grad = False
+
+        self.embed = model.BertModel(BertConfig(os.path.join('/output_dir', CONFIG_NAME)))
+        # self.embed = nn.Embedding.from_pretrained(word_vectors)
+        # self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
+        # self.hwy = HighwayEncoder(2, hidden_size)
 
     def forward(self, x):
-        emb = self.embed(x)   # (batch_size, seq_len, embed_size)
-        emb = F.dropout(emb, self.drop_prob, self.training)
-        emb = self.proj(emb)  # (batch_size, seq_len, hidden_size)
-        emb = self.hwy(emb)   # (batch_size, seq_len, hidden_size)
-
+        emb = self.embed(x, output_all_encoded_layers=False)   # (batch_size, seq_len, embed_size)
+        # emb = F.dropout(emb, self.drop_prob, self.training)
+        # emb = self.proj(emb)  # (batch_size, seq_len, hidden_size)
+        # emb = self.hwy(emb)   # (batch_size, seq_len, hidden_size)
         return emb
-
 
 class HighwayEncoder(nn.Module):
     """Encode an input sequence using a highway network.
