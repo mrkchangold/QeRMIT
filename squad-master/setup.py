@@ -26,7 +26,6 @@ from zipfile import ZipFile
 
 from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
                                                   BertTokenizer,
-                                                  FullTokenizer,
                                                   whitespace_tokenize)
 from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME, BertModel
 import collections
@@ -124,7 +123,8 @@ def process_file(filename, data_type, word_counter, char_counter):
                 context_tokens = tokenizer.tokenize(context) # added_flag
                 context_chars = [list(token) for token in context_tokens]
                 # spans = convert_idx(context, context_tokens)
-                spans = convert_idx(" ".join(str(x) for x in context_tokens), context_tokens)
+                context_tokens_w_space = " ".join(str(x) for x in context_tokens)
+                spans = convert_idx(context_tokens_w_space, context_tokens)
                 # print("spans")
                 # print(spans)
                 for token in context_tokens:
@@ -146,36 +146,30 @@ def process_file(filename, data_type, word_counter, char_counter):
                     answer_texts = []
                     for answer in qa["answers"]:
                         # print('*-----------------------------------------------------------------------***')
-                        
-                        # print("ground truth:")
-                        # print(answer_text)
                         answer_text = answer["text"]
                         answer_text = tokenizer.tokenize(answer_text) #added_flag
                         answer_start = answer['answer_start'] #this is actually the character start
-                        # print("context:")
-                        # print(tokenizer.tokenize(context))
-                        # answer_start = answer_start + offset
-
-                        # num_words_prior2answer = len(context[:answer_start].split())
-                        num_words_tokenized_prior2answer = len(tokenizer.tokenize(context[:answer_start]))
-                        answer_start_idx = num_words_tokenized_prior2answer
-                        answer_end_idx = answer_start + len(answer_text)
-                        answer_texts.append(answer_text)
-                        answer_start = len(" ".join(str(x) for x in context_tokens[:answer_start_idx]))
-                        answer_end = len(" ".join(str(x) for x in context_tokens[:answer_end_idx]))
+                        # print("ground truth:")
+                        # print(answer_text)
+                        num_words_tokenized_prior2answer = len(tokenizer.tokenize(context[:answer_start])) # @ token level
+                        answer_start_idx = num_words_tokenized_prior2answer # @ token level
+                        answer_end_idx = answer_start_idx + len(answer_text) # @ token level
+                        answer_texts.append(answer_text) # @ token level
+                        answer_start = len(" ".join(str(x) for x in context_tokens[:answer_start_idx])) # @ char level
+                        answer_end = len(" ".join(str(x) for x in context_tokens[:answer_end_idx])) # @ char level
+                        # print("answer_start_idx: "+str(answer_start_idx)+" answer_end_idx: "+str(answer_end_idx))
+                        # print("answer_start: "+str(answer_start)+" answer_end: "+str(answer_end))
                         # print("answer span")
-                        # print(context_tokens[answer_start:answer_end])
-                        # print('************************************************************************')
+                        # print(context_tokens_w_space[answer_start:answer_end])
                         answer_span = []
                         for idx, span in enumerate(spans):
-                            # print(span)
                             if not (answer_end <= span[0] or answer_start >= span[1]):
-                                answer_span.append(idx)
-                                # print(idx)
-                                # print(span)
-                        
+                                answer_span.append(idx) #adds the spans of (token start @ char level, token len)                        
                         
                         y1, y2 = answer_span[0], answer_span[-1]
+                        # print("y1: "+str(y1)+" y2: "+str(y2))
+                        # print(context_tokens[y1:y2+1])
+                        # print(context_tokens[y2])
                         y1s.append(y1)
                         y2s.append(y2)
                     example = {"context_tokens": context_tokens,
@@ -197,8 +191,7 @@ def process_file(filename, data_type, word_counter, char_counter):
 
 def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, num_vectors=None):
     #######################################################################################
-    tokenizer = FullTokenizer(
-      vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case)
+    tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True)
     #######################################################################################
     print("Pre-processing {} vectors...".format(data_type))
     embedding_dict = {}
@@ -434,7 +427,8 @@ def pre_process(args):
         word_counter, 'word', emb_file='/home/mrkchang/Documents/Stanford/CS224N/hugface/google-bert-mod/uncased_L-24_H-1024_A-16/', vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
     char_emb_mat, char2idx_dict = get_embedding(
         char_counter, 'char', emb_file=None, vec_size=args.char_dim)
-
+    print("test dict")
+    print(word2idx_dict['small'])
     # Process dev and test sets
     dev_examples, dev_eval = process_file(args.dev_file, "dev", word_counter, char_counter)
     build_features(args, train_examples, "train", args.train_record_file, word2idx_dict, char2idx_dict)
