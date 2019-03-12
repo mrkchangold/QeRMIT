@@ -30,6 +30,20 @@ from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
 from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME, BertModel
 import collections
 
+# added_flag
+def load_vocab(vocab_file):
+    """Loads a vocabulary file into a dictionary."""
+    vocab = collections.OrderedDict()
+    index = 0
+    with open(vocab_file, "r", encoding="utf-8") as reader:
+        while True:
+            token = reader.readline()
+            if not token:
+                break
+            token = token.strip()
+            vocab[token] = index
+            index += 1
+    return vocab
 
 def download_url(url, output_path, show_progress=True):
     class DownloadProgressBar(tqdm):
@@ -213,15 +227,16 @@ def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, nu
         # bert = BertModel(config)
         model = BertForQuestionAnswering.from_pretrained('bert-large-uncased')
         
+  
         
-        
-        vocab_file = emb_file + '/bert_config.json'
+        vocab_file = emb_file + '/vocab.txt'
+        vocabDict = load_vocab(vocab_file)      
         with open(vocab_file, "r", encoding="utf-8") as fh:
             count = 0
             for word in tqdm(fh):
                     
-                input_ids = tokenizer.convert_tokens_to_ids(word)
-                sequence_output, _ = model.bert(input_ids, output_all_encoded_layers=False)
+                # input_ids = tokenizer.convert_tokens_to_ids(word)
+                sequence_output, _ = model.bert(vocabDict[word], output_all_encoded_layers=False)
                 embedding_dict[word] = sequence_output
                 print(sequence_output.size())
             
@@ -424,7 +439,7 @@ def pre_process(args):
     # word_emb_mat, word2idx_dict = get_embedding(
     #     word_counter, 'word', emb_file=args.glove_file, vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
     word_emb_mat, word2idx_dict = get_embedding(
-        word_counter, 'word', emb_file='/home/mrkchang/Documents/Stanford/CS224N/hugface/google-bert-mod/uncased_L-24_H-1024_A-16/', vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
+        word_counter, 'word', emb_file='./uncased_L-24_H-1024_A-16/', vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
     char_emb_mat, char2idx_dict = get_embedding(
         char_counter, 'char', emb_file=None, vec_size=args.char_dim)
     print("test dict")
