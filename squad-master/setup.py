@@ -26,9 +26,9 @@ from zipfile import ZipFile
 
 from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
                                                   BertTokenizer,
+                                                  FullTokenizer,
                                                   whitespace_tokenize)
 from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME, BertModel
-
 import collections
 
 
@@ -197,7 +197,7 @@ def process_file(filename, data_type, word_counter, char_counter):
 
 def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, num_vectors=None):
     #######################################################################################
-    tokenizer = tokenization.FullTokenizer(
+    tokenizer = FullTokenizer(
       vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case)
     #######################################################################################
     print("Pre-processing {} vectors...".format(data_type))
@@ -213,10 +213,27 @@ def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, nu
         #         vector = list(map(float, array[-vec_size:]))
         #         if word in counter and counter[word] > limit:
         #             embedding_dict[word] = vector
-        output_config_file = emb_file + '/bert_config.json'
-        config = BertConfig(output_config_file)
-        bert = BertModel(config)
-        embedding_dict = 
+
+
+        # output_config_file = emb_file + '/bert_config.json'
+        # config = BertConfig(output_config_file)
+        # bert = BertModel(config)
+        model = BertForQuestionAnswering.from_pretrained('bert-large-uncased')
+        
+        
+        
+        vocab_file = emb_file + '/bert_config.json'
+        with open(vocab_file, "r", encoding="utf-8") as fh:
+            count = 0
+            for word in tqdm(fh):
+                    
+                input_ids = tokenizer.convert_tokens_to_ids(word)
+                sequence_output, _ = model.bert(input_ids, output_all_encoded_layers=False)
+                embedding_dict[word] = sequence_output
+                print(sequence_output.size())
+            
+        
+        
         print("{} / {} tokens have corresponding {} embedding vector".format(
             len(embedding_dict), len(filtered_elements), data_type))
     else:
@@ -415,7 +432,7 @@ def pre_process(args):
     #     word_counter, 'word', emb_file=args.glove_file, vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
     word_emb_mat, word2idx_dict = get_embedding(
         word_counter, 'word', emb_file='/home/mrkchang/Documents/Stanford/CS224N/hugface/google-bert-mod/uncased_L-24_H-1024_A-16/', vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
-   char_emb_mat, char2idx_dict = get_embedding(
+    char_emb_mat, char2idx_dict = get_embedding(
         char_counter, 'char', emb_file=None, vec_size=args.char_dim)
 
     # Process dev and test sets
