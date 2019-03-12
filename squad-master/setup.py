@@ -32,10 +32,10 @@ import collections
 import pdb
 # added_flag
 def load_vocab(vocab_file):
-    """Loads a vocabulary file into a dictionary."""
+    """Loads a vocabulary file into a dictionary."""import collections
     vocab = collections.OrderedDict()
     index = 0
-    with open(vocab_file, "r", encoding="utf-8") as reader:
+    with open(vocab_file, "r", encoding="utf-8") as import collections
         while True:
             token = reader.readline()
             if not token:
@@ -45,27 +45,27 @@ def load_vocab(vocab_file):
             index += 1
     return vocab
 
-def download_url(url, output_path, show_progress=True):
+def download_url(url, output_path, show_progress=Truimport collections
     class DownloadProgressBar(tqdm):
-        def update_to(self, b=1, bsize=1, tsize=None):
+        def update_to(self, b=1, bsize=1, tsize=Noneimport collections
             if tsize is not None:
                 self.total = tsize
             self.update(b * bsize - self.n)
 
     if show_progress:
         # Download with a progress bar
-        with DownloadProgressBar(unit='B', unit_scale=True,
-                                 miniters=1, desc=url.split('/')[-1]) as t:
+        with DownloadProgressBar(unit='B', unit_scalimport collections
+                                 miniters=1, desc=urimport collections[-1]) as t:
             urllib.request.urlretrieve(url,
-                                       filename=output_path,
-                                       reporthook=t.update_to)
+                                       filename=outpimport collections
+                                       reporthook=t.import collections
     else:
         # Simple download with no progress bar
-        urllib.request.urlretrieve(url, output_path)
+        urllib.request.urlretrieve(url, output_path)import collections
 
 
 def url_to_data_path(url):
-    return os.path.join('./data/', url.split('/')[-1])
+    return os.path.join('./data/', url.split('/')[-1import collections
 
 
 def download(args):
@@ -205,13 +205,22 @@ def process_file(filename, data_type, word_counter, char_counter):
 
 def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, num_vectors=None):
     #######################################################################################
-    tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True)
+    # tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True)
     #######################################################################################
     print("Pre-processing BERT vectors")
     print("Pre-processing {} vectors...".format(data_type))
     embedding_dict = {}
     filtered_elements = [k for k, v in counter.items() if v > limit]
+
     if emb_file is not None:
+        assert vec_size is not None
+        with open(emb_file, "r", encoding="utf-8") as fh:
+            for line in tqdm(fh, total=num_vectors):
+                array = line.split()
+                word = "".join(array[0:-vec_size])
+                vector = list(map(float, array[-vec_size:]))
+                if word in counter and counter[word] > limit:
+                    embedding_dict[word] = vector
         ################################## modified #############################################
         # assert vec_size is not None
         # with open(emb_file, "r", encoding="utf-8") as fh:
@@ -223,24 +232,24 @@ def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, nu
         #             embedding_dict[word] = vector
 
 
-        # output_config_file = emb_file + '/bert_config.json'
-        # config = BertConfig(output_config_file)
-        # bert = BertModel(config)
-        model = BertForQuestionAnswering.from_pretrained('bert-large-uncased')
+        # # output_config_file = emb_file + '/bert_config.json'
+        # # config = BertConfig(output_config_file)
+        # # bert = BertModel(config)
+        # model = BertForQuestionAnswering.from_pretrained('bert-large-uncased')
         
   
         
-        vocab_file = emb_file + '/vocab.txt' # added_flag
-        vocabDict = load_vocab(vocab_file)       # added_flag 
-        with open(vocab_file, "r", encoding="utf-8") as fh:
-            count = 0
-            for word in tqdm(fh): # added_flag
-                word = word.split('\n')[0] # added_flag
-                # input_ids = tokenizer.convert_tokens_to_ids(word)
-                # pdb.set_trace()
-                idx = torch.unsqueeze(torch.unsqueeze(torch.tensor(vocabDict[word]),0),0)
-                sequence_output = model.bert(idx, output_all_encoded_layers=False)[0].detach().numpy() # added_flag
-                embedding_dict[word] = sequence_output # added_flag
+        # vocab_file = emb_file + '/vocab.txt' # added_flag
+        # vocabDict = load_vocab(vocab_file)       # added_flag 
+        # with open(vocab_file, "r", encoding="utf-8") as fh:
+        #     count = 0
+        #     for word in tqdm(fh): # added_flag
+        #         word = word.split('\n')[0] # added_flag
+        #         # input_ids = tokenizer.convert_tokens_to_ids(word)
+        #         # pdb.set_trace()
+        #         idx = torch.unsqueeze(torch.unsqueeze(torch.tensor(vocabDict[word]),0),0)
+        #         sequence_output = model.bert(idx, output_all_encoded_layers=False)[0].detach().numpy() # added_flag
+        #         embedding_dict[word] = sequence_output # added_flag
             
         
         
@@ -438,15 +447,20 @@ def pre_process(args):
     word_counter, char_counter = Counter(), Counter()
     train_examples, train_eval = process_file(args.train_file, "train", word_counter, char_counter)
     ############################## modified#################################
-    # word_emb_mat, word2idx_dict = get_embedding(
-    #     word_counter, 'word', emb_file=args.glove_file, vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
     word_emb_mat, word2idx_dict = get_embedding(
-        word_counter, 'word', emb_file='./uncased_L-24_H-1024_A-16/', vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
+        word_counter, 'word', emb_file=args.glove_file, vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
+    # word_emb_mat, word2idx_dict = get_embedding(
+    #     word_counter, 'word', emb_file='./uncased_L-24_H-1024_A-16/', vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
     char_emb_mat, char2idx_dict = get_embedding(
         char_counter, 'char', emb_file=None, vec_size=args.char_dim)
-    print("test dict")
-    print(word2idx_dict['small'])
+    # print("test dict")
+    # print(word2idx_dict['small'])
     # Process dev and test sets
+    emb_file='./uncased_L-24_H-1024_A-16/'
+    vocab_file = emb_file + '/vocab.txt' # added_flag
+    vocabDict = load_vocab(vocab_file)       # added_flag 
+    word2idx_dict = vocabDict # added_flag OVERWRITING
+
     dev_examples, dev_eval = process_file(args.dev_file, "dev", word_counter, char_counter)
     build_features(args, train_examples, "train", args.train_record_file, word2idx_dict, char2idx_dict)
     dev_meta = build_features(args, dev_examples, "dev", args.dev_record_file, word2idx_dict, char2idx_dict)

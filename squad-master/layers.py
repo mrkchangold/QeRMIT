@@ -11,6 +11,10 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from util import masked_softmax
 
+from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
+                                                  BertTokenizer,
+                                                  whitespace_tokenize)
+from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME, BertModel
 
 class Embedding(nn.Module):
     """Embedding layer used by BiDAF, without the character-level component.
@@ -26,13 +30,16 @@ class Embedding(nn.Module):
     def __init__(self, word_vectors, char_vectors, hidden_size, drop_prob):
         super(Embedding, self).__init__()
         self.drop_prob = drop_prob
-        self.embed = nn.Embedding.from_pretrained(word_vectors) # This is actually BERT
+        # self.embed = nn.Embedding.from_pretrained(word_vectors) 
+        # This is actually BERT
+        self.embed = BertForQuestionAnswering.from_pretrained('bert-large-uncased')
         self.embed_char = CNNEmbeddings(char_vectors = char_vectors, embed_size = 64) # added_flag
         self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
         self.hwy = HighwayEncoder(2, hidden_size)
 
     def forward(self, x):
-        emb = self.embed(x)   # (batch_size, seq_len, embed_size)
+        # emb = self.embed(x)   # (batch_size, seq_len, embed_size)
+        emb, _ = self.embed.bert(x, output_all_encoded_layers=False)
         emb_char = self.embed_char(x) # added_flag
         emb = torch.cat((emb, emb_char), dim=2) # added_flag
         emb = F.dropout(emb, self.drop_prob, self.training)

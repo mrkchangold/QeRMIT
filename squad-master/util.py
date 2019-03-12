@@ -18,6 +18,10 @@ import ujson as json
 
 from collections import Counter
 
+from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
+                                                  BertTokenizer,
+                                                  whitespace_tokenize)
+from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME, BertModel
 
 class SQuAD(data.Dataset):
     """Stanford Question Answering Dataset (SQuAD).
@@ -636,12 +640,142 @@ def convert_tokens(eval_dict, qa_id, y_start_list, y_end_list, no_answer):
         else:
             if no_answer:
                 y_start, y_end = y_start - 1, y_end - 1
-            start_idx = spans[y_start][0]
-            end_idx = spans[y_end][1]
-            pred_dict[str(qid)] = context[start_idx: end_idx]
-            sub_dict[uuid] = context[start_idx: end_idx]
+            start_idx = spans[y_start][0] # looks like it's looking at char level
+            end_idx = spans[y_end][1] # looks like it's looking at char level
+            unprocessed = context[start_idx: end_idx] # looks like it's looking at char level
+            print("THIS IS UNPROCESSED:")
+            print(unprocessed)
+
+            #################################################################################
+            tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True) ######################################################
+
+            context_tokens = tokenizer.tokenize(context) # added_flag
+            context_tokens_w_space = " ".join(str(x) for x in context_tokens)
+            unprocessed_BERTTOKEN = context_tokens_w_space[start_idx: end_idx]
+            print("This is still unprocessed, BUT AFTER BERT tokenization")
+            print(unprocessed_BERTTOKEN)
+
+            # # below is taken from run_squad.py line 539
+            # tok_tokens = feature.tokens[pred.start_index:(pred.end_index + 1)]
+            # orig_doc_start = feature.token_to_orig_map[pred.start_index]
+            # orig_doc_end = feature.token_to_orig_map[pred.end_index]
+            # orig_tokens = example.doc_tokens[orig_doc_start:(orig_doc_end + 1)]
+            # tok_text = " ".join(tok_tokens)
+
+            # De-tokenize WordPieces that have been split off.
+            tok_text = unprocessed_BERTTOKEN.replace(" ##", "")
+            tok_text = unprocessed_BERTTOKEN.replace("##", "")
+
+            # Clean whitespace
+            tok_text = unprocessed_BERTTOKEN.strip()
+            tok_text = " ".join(unprocessed_BERTTOKEN.split())
+            orig_text = " ".join(context_tokens)
+
+            processed = get_final_text(tok_text, orig_text, do_lower_case = True, verbose_logging = False)
+            
+            print("PROCESSED??:...")
+            print(processed)
+
+            pred_dict[str(qid)] = processed
+            sub_dict[uuid] = processed
+
+    
     return pred_dict, sub_dict
 
+def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
+    """Project the tokenized prediction back to the original text."""
+
+    # When we created the data, we kept track of the alignment between original
+    # (whitespace tokenized) tokens and our WordPiece tokenized tokens. So
+    # now `orig_text` contains the span of our original text corresponding to the
+    # span that we predicted.
+    #
+    # However, `orig_text` may contain extra characters that we don't want in
+    # our prediction.
+    #
+    # For example, let's say:
+    #   pred_text = steve smith
+    #   orig_text = Steve Smith's
+    #
+    # We don't want to return `orig_text` because it contains the extra "'s".
+    #
+    # We don't want to return `pred_text` because it's already been normalized
+    # (the SQuAD eval script also does punctuation stripping/lower casing but
+    # our tokenizer does additional normalization like stripping accent
+    # characters).
+    #
+    # What we really want to return is "Steve Smith".
+    #
+    # Therefore, we have to apply a semi-complicated alignment heruistic between
+    # `pred_text` and `orig_text` to get a character-to-charcter alignment. This
+    # can fail in certain cases in which case we just return `orig_text`.
+
+    def _strip_spaces(text):
+        ns_chars = []
+        ns_to_s_map = collections.OrderedDict()
+        for (i, c) in enumerate(text):
+            if c == " ":
+                continue
+            ns_to_s_map[len(ns_chars)] = i
+            ns_chars.append(c)
+        ns_text = "".join(ns_chars)
+        return (ns_text, ns_to_s_map)
+
+    # We first tokenize `orig_text`, strip whitespace from the result
+    # and `pred_text`, and check if they are the same length. If they are
+    # NOT the same length, the heuristic has failed. If they are the same
+    # length, we assume the characters are one-to-one aligned.
+    tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
+
+    tok_text = " ".join(tokenizer.tokenize(orig_text))
+
+    start_position = tok_text.find(pred_text)
+    if start_position == -1:
+        if verbose_logging:
+            logger.info(
+                "Unable to find text: '%s' in '%s'" % (pred_text, orig_text))
+        return orig_text
+    end_position = start_position + len(pred_text) - 1
+
+    (orig_ns_text, orig_ns_to_s_map) = _strip_spaces(orig_text)
+    (tok_ns_text, tok_ns_to_s_map) = _strip_spaces(tok_text)
+
+    if len(orig_ns_text) != len(tok_ns_text):
+        if verbose_logging:
+            logger.info("Length not equal after stripping spaces: '%s' vs '%s'",
+                        orig_ns_text, tok_ns_text)
+        return orig_text
+
+    # We then project the characters in `pred_text` back to `orig_text` using
+    # the character-to-character alignment.
+    tok_s_to_ns_map = {}
+    for (i, tok_index) in tok_ns_to_s_map.items():
+        tok_s_to_ns_map[tok_index] = i
+
+    orig_start_position = None
+    if start_position in tok_s_to_ns_map:
+        ns_start_position = tok_s_to_ns_map[start_position]
+        if ns_start_position in orig_ns_to_s_map:
+            orig_start_position = orig_ns_to_s_map[ns_start_position]
+
+    if orig_start_position is None:
+        if verbose_logging:
+            logger.info("Couldn't map start position")
+        return orig_text
+
+    orig_end_position = None
+    if end_position in tok_s_to_ns_map:
+        ns_end_position = tok_s_to_ns_map[end_position]
+        if ns_end_position in orig_ns_to_s_map:
+            orig_end_position = orig_ns_to_s_map[ns_end_position]
+
+    if orig_end_position is None:
+        if verbose_logging:
+            logger.info("Couldn't map end position")
+        return orig_text
+
+    output_text = orig_text[orig_start_position:(orig_end_position + 1)]
+    return output_text
 
 def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
     if not ground_truths:
