@@ -41,7 +41,7 @@ class Embedding(nn.Module):
         # emb = self.embed(x)   # (batch_size, seq_len, embed_size)
         emb, _ = self.embed.bert(x, output_all_encoded_layers=False)
 
-        emb_char = self.embed_char(x[]) # added_flag
+        emb_char = self.embed_char(x) # added_flag
         emb = torch.cat((emb, emb_char), dim=2) # added_flag
         emb = F.dropout(emb, self.drop_prob, self.training)
         emb = self.proj(emb)  # (batch_size, seq_len, hidden_size)
