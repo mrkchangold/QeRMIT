@@ -33,6 +33,10 @@ class Embedding(nn.Module):
         # self.embed = nn.Embedding.from_pretrained(word_vectors) 
         # This is actually BERT
         self.embed = BertForQuestionAnswering.from_pretrained('bert-large-uncased')
+
+        for name, param in self.embed.named_parameters():
+            param.requires_grad = False
+
         self.embed_char = CNNEmbeddings(char_vectors = char_vectors, embed_size = 64) # added_flag
         # self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
         self.proj = nn.Linear(64+1024, hidden_size, bias=False) # added_flag hardcoded
