@@ -4,6 +4,8 @@ Author:
     Chris Chute (chute@stanford.edu)
 """
 
+from __future__ import absolute_import, division, print_function
+
 import numpy as np
 import random
 import torch
@@ -23,7 +25,6 @@ from tqdm import tqdm
 from ujson import load as json_load
 from util import collate_fn, SQuAD
 
-from __future__ import absolute_import, division, print_function
 
 import argparse
 import collections
