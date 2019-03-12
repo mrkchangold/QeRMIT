@@ -34,7 +34,8 @@ class Embedding(nn.Module):
         # This is actually BERT
         self.embed = BertForQuestionAnswering.from_pretrained('bert-large-uncased')
         self.embed_char = CNNEmbeddings(char_vectors = char_vectors, embed_size = 64) # added_flag
-        self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
+        # self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
+        self.proj = nn.Linear(64+1024, hidden_size, bias=False) # added_flag hardcoded
         self.hwy = HighwayEncoder(2, hidden_size)
 
     def forward(self, x, xc): # added_flag xc
