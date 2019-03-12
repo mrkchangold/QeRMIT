@@ -414,38 +414,24 @@ def main(args):
     log.info('Loading embeddings...')
     word_vectors = util.torch_from_json(args.word_emb_file)
 
-    ######################################
-    tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True)
-    train_examples = None
-    train_examples = read_squad_examples(
-        input_file=args.train_file, is_training=True, version_2_with_negative=args.version_2_with_negative)
-    train_features = convert_examples_to_features(
-        examples=train_examples,
-        tokenizer=tokenizer,
-        max_seq_length=args.max_seq_length,
-        doc_stride=args.doc_stride,
-        max_query_length=args.max_query_length,
-        is_training=True)
-    if args.local_rank == -1 or torch.distributed.get_rank() == 0:
-        logger.info("  Saving train features into cached file %s", cached_train_features_file)
-        with open(cached_train_features_file, "wb") as writer:
-            pickle.dump(train_features, writer)
-    all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
-    x = all_input_ids
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    # ######################################
+    # tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True)
+    # train_examples = None
+    # train_examples = read_squad_examples(
+    #     input_file=args.train_file, is_training=True, version_2_with_negative=args.version_2_with_negative)
+    # train_features = convert_examples_to_features(
+    #     examples=train_examples,
+    #     tokenizer=tokenizer,
+    #     max_seq_length=args.max_seq_length,
+    #     doc_stride=args.doc_stride,
+    #     max_query_length=args.max_query_length,
+    #     is_training=True)
+    # if args.local_rank == -1 or torch.distributed.get_rank() == 0:
+    #     logger.info("  Saving train features into cached file %s", cached_train_features_file)
+    #     with open(cached_train_features_file, "wb") as writer:
+    #         pickle.dump(train_features, writer)
+    # all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
+    # x = all_input_ids
     ###########################################
 
     # Get model
