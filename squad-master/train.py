@@ -494,8 +494,6 @@ def main(args):
                 batch_size = cw_idxs.size(0)
                 optimizer.zero_grad()
                 
-                print("cw_idxs:")
-                print(cw_idxs)
                 # Forward
                 log_p1, log_p2 = model(cw_idxs, qw_idxs)
                 y1, y2 = y1.to(device), y2.to(device)
