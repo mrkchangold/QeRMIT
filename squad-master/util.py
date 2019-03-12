@@ -643,41 +643,41 @@ def convert_tokens(eval_dict, qa_id, y_start_list, y_end_list, no_answer):
             start_idx = spans[y_start][0] # looks like it's looking at char level
             end_idx = spans[y_end][1] # looks like it's looking at char level
             unprocessed = context[start_idx: end_idx] # looks like it's looking at char level
-            print("THIS IS UNPROCESSED:")
-            print(unprocessed)
+            # print("THIS IS UNPROCESSED:")
+            # print(unprocessed)
 
-            #################################################################################
-            tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True) ######################################################
+            # #################################################################################
+            # tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True) ######################################################
 
-            context_tokens = tokenizer.tokenize(context) # added_flag
-            context_tokens_w_space = " ".join(str(x) for x in context_tokens)
-            unprocessed_BERTTOKEN = context_tokens_w_space[start_idx: end_idx]
-            print("This is still unprocessed, BUT AFTER BERT tokenization")
-            print(unprocessed_BERTTOKEN)
+            # context_tokens = tokenizer.tokenize(context) # added_flag
+            # context_tokens_w_space = " ".join(str(x) for x in context_tokens)
+            # unprocessed_BERTTOKEN = context_tokens_w_space[start_idx: end_idx]
+            # print("This is still unprocessed, BUT AFTER BERT tokenization")
+            # print(unprocessed_BERTTOKEN)
 
-            # # below is taken from run_squad.py line 539
-            # tok_tokens = feature.tokens[pred.start_index:(pred.end_index + 1)]
-            # orig_doc_start = feature.token_to_orig_map[pred.start_index]
-            # orig_doc_end = feature.token_to_orig_map[pred.end_index]
-            # orig_tokens = example.doc_tokens[orig_doc_start:(orig_doc_end + 1)]
-            # tok_text = " ".join(tok_tokens)
+            # # # below is taken from run_squad.py line 539
+            # # tok_tokens = feature.tokens[pred.start_index:(pred.end_index + 1)]
+            # # orig_doc_start = feature.token_to_orig_map[pred.start_index]
+            # # orig_doc_end = feature.token_to_orig_map[pred.end_index]
+            # # orig_tokens = example.doc_tokens[orig_doc_start:(orig_doc_end + 1)]
+            # # tok_text = " ".join(tok_tokens)
 
-            # De-tokenize WordPieces that have been split off.
-            tok_text = unprocessed_BERTTOKEN.replace(" ##", "")
-            tok_text = unprocessed_BERTTOKEN.replace("##", "")
+            # # De-tokenize WordPieces that have been split off.
+            # tok_text = unprocessed_BERTTOKEN.replace(" ##", "")
+            # tok_text = unprocessed_BERTTOKEN.replace("##", "")
 
-            # Clean whitespace
-            tok_text = unprocessed_BERTTOKEN.strip()
-            tok_text = " ".join(unprocessed_BERTTOKEN.split())
-            orig_text = " ".join(context_tokens)
+            # # Clean whitespace
+            # tok_text = unprocessed_BERTTOKEN.strip()
+            # tok_text = " ".join(unprocessed_BERTTOKEN.split())
+            # orig_text = " ".join(context_tokens)
 
-            processed = get_final_text(tok_text, orig_text, do_lower_case = True, verbose_logging = False)
+            # processed = get_final_text(tok_text, orig_text, do_lower_case = True, verbose_logging = False)
             
-            print("PROCESSED??:...")
-            print(processed)
+            # print("PROCESSED??:...")
+            # print(processed)
 
-            pred_dict[str(qid)] = processed
-            sub_dict[uuid] = processed
+            pred_dict[str(qid)] = unprocessed
+            sub_dict[uuid] = unprocessed
 
     
     return pred_dict, sub_dict
