@@ -286,9 +286,11 @@ class CNNEmbeddings(nn.Module):
         """
         super(CNNEmbeddings, self).__init__()
 
-        self.embed_size = embed_size
+        self.embed_size = 64 # hard_coded
         self.vocab = vocab
-        self.e_char = 50 # given in instruction
+        self.e_char = 64 # hard coded
+        # self.e_char = 50 # given in instruction
+
         self.dropout = 0.3 # given in instruction
 
         self.cnn = CNN(e_word = embed_size, e_char = self.e_char, k = 5)
@@ -305,9 +307,9 @@ class CNNEmbeddings(nn.Module):
         @param output: Tensor of shape (sentence_length, batch_size, embed_size), containing the 
             CNN-based embeddings for each word of the sentences in the batch
         """
-        print(input.size()) #[2, 246]
+        # print(input.size()) #[2, 246]
         output = self.embeddings(input)
-        print(output.size()) #[2, 246, 64]
+        # print(output.size()) #[2, 246, 64]
         sentence_length, batch_size, max_word_length, e_char = output.size()
         # sentence_length, batch_size, max_word_length, e_char = output.size()
         output = output.view(-1,max_word_length,e_char)
