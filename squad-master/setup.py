@@ -23,13 +23,13 @@ from collections import Counter
 from subprocess import run
 from tqdm import tqdm
 from zipfile import ZipFile
-
+import torch
 from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
                                                   BertTokenizer,
                                                   whitespace_tokenize)
 from pytorch_pretrained_bert.modeling import BertForQuestionAnswering, BertConfig, WEIGHTS_NAME, CONFIG_NAME, BertModel
 import collections
-
+import pdb
 # added_flag
 def load_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
@@ -207,6 +207,7 @@ def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, nu
     #######################################################################################
     tokenizer = BertTokenizer.from_pretrained('bert-large-uncased', do_lower_case=True)
     #######################################################################################
+    print("Pre-processing BERT vectors")
     print("Pre-processing {} vectors...".format(data_type))
     embedding_dict = {}
     filtered_elements = [k for k, v in counter.items() if v > limit]
@@ -229,16 +230,17 @@ def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, nu
         
   
         
-        vocab_file = emb_file + '/vocab.txt'
-        vocabDict = load_vocab(vocab_file)      
+        vocab_file = emb_file + '/vocab.txt' # added_flag
+        vocabDict = load_vocab(vocab_file)       # added_flag 
         with open(vocab_file, "r", encoding="utf-8") as fh:
             count = 0
-            for word in tqdm(fh):
-                    
+            for word in tqdm(fh): # added_flag
+                word = word.split('\n')[0] # added_flag
                 # input_ids = tokenizer.convert_tokens_to_ids(word)
-                sequence_output, _ = model.bert(vocabDict[word], output_all_encoded_layers=False)
-                embedding_dict[word] = sequence_output
-                print(sequence_output.size())
+                # pdb.set_trace()
+                idx = torch.unsqueeze(torch.unsqueeze(torch.tensor(vocabDict[word]),0),0)
+                sequence_output = model.bert(idx, output_all_encoded_layers=False)[0].detach().numpy() # added_flag
+                embedding_dict[word] = sequence_output # added_flag
             
         
         
@@ -261,7 +263,7 @@ def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, nu
     embedding_dict[OOV] = [0. for _ in range(vec_size)]
     idx2emb_dict = {idx: embedding_dict[token]
                     for token, idx in token2idx_dict.items()}
-    emb_mat = [idx2emb_dict[idx] for idx in range(len(idx2emb_get_setup_argsdict))]
+    emb_mat = [idx2emb_dict[idx] for idx in range(len(idx2emb_dict))]
     return emb_mat, token2idx_dict
 
 
