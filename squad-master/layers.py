@@ -37,11 +37,11 @@ class Embedding(nn.Module):
         self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
         self.hwy = HighwayEncoder(2, hidden_size)
 
-    def forward(self, x):
+    def forward(self, x, xc): # added_flag xc
         # emb = self.embed(x)   # (batch_size, seq_len, embed_size)
         emb, _ = self.embed.bert(x, output_all_encoded_layers=False)
 
-        emb_char = self.embed_char(x) # added_flag
+        emb_char = self.embed_char(xc) # added_flag
         emb = torch.cat((emb, emb_char), dim=2) # added_flag
         emb = F.dropout(emb, self.drop_prob, self.training)
         emb = self.proj(emb)  # (batch_size, seq_len, hidden_size)
@@ -305,10 +305,11 @@ class CNNEmbeddings(nn.Module):
         @param output: Tensor of shape (sentence_length, batch_size, embed_size), containing the 
             CNN-based embeddings for each word of the sentences in the batch
         """
-        print(input.size())
+        print(input.size()) #[2, 246]
         output = self.embeddings(input)
-        print(output.size())
+        print(output.size()) #[2, 246, 64]
         sentence_length, batch_size, max_word_length, e_char = output.size()
+        # sentence_length, batch_size, max_word_length, e_char = output.size()
         output = output.view(-1,max_word_length,e_char)
         output = output.permute(0,2,1) #(sentxbatch) x e_char x word_len
         output = self.cnn(output) #input: (sentxbatch) x e_char x word_len
