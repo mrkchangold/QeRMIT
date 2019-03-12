@@ -83,7 +83,7 @@ class HighwayEncoder(nn.Module):
 
         return x
 
-
+# good commit
 class RNNEncoder(nn.Module):
     """General-purpose layer for encoding a sequence using a bidirectional RNN.
 
