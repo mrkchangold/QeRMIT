@@ -66,7 +66,7 @@ def main(args):
     nll_meter = util.AverageMeter()
     pred_dict = {}  # Predictions for TensorBoard
     sub_dict = {}   # Predictions for submission
-    eval_file = vars(args)['{}_eval_file'.format(args.split)]
+    eval_file = vars(args)['{}_eval_file_mod'.format(args.split)]
     with open(eval_file, 'r') as fh:
         gold_dict = json_load(fh)
     with torch.no_grad(), \
