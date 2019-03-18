@@ -73,6 +73,7 @@ mkdir ~/Desktop/models_squad/train_default_v2/
 fileutil cp -R /cns/os-d/home/diai/public/bert_output/squadv2.0/train_default_v2/*.csv ~/Desktop/models_squad/train_default_v2/
 fileutil cp -R /cns/os-d/home/diai/public/bert_output/squadv2.0/train_default_v2/*.json ~/Desktop/models_squad/train_default_v2/
 fileutil cp -R /cns/os-d/home/diai/public/bert_output/squadv2.0/train_default_v2/*tf* ~/Desktop/models_squad/train_default_v2/
+#fileutil rm /cns/os-d/home/diai/public/bert_output/squadv2.0/train_default_v2/*
 
 #transfer files from desktop to laptop
 scp -r diai@diai.mtv.corp.google.com:~/Desktop/models_squad/train_default_v2/ /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/submission_files/bert_large
@@ -88,7 +89,7 @@ allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/goog
 alias output_dir='~/Desktop/models_squad/train_default_v2'
 python ~/Desktop/lumiere/squad/evaluate-v2.0.py ~/Desktop/models_squad/data/dev-v2.0.json ~/Desktop/models_squad/train_default_v2/predictions.json --na-prob-file ~/Desktop/models_squad/train_default_v2/null_odds.json
 # Get predictions with new threshold like this:
-allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/google/train_squad_tpu.borg reload --vars=exp_name=train_default_v2,version_2_with_negative=true,do_train=false,null_score_diff_threshold=-5.584860801696777
+allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/google/train_squad_tpu.borg reload --vars=exp_name=train_default_v2,version_2_with_negative=true,do_train=false,null_score_diff_threshold=-5.914348542690277
 
 
 # threshold scores on original dev set.
@@ -159,6 +160,58 @@ allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/goog
   "best_f1_thresh": -5.584860801696777
 }
 
+# Threshold scores for optimized BERT
+{
+  "exact": 73.51102336294834, 
+  "f1": 77.27169981723289, 
+  "total": 6078, 
+  "HasAns_exact": 75.56701030927834, 
+  "HasAns_f1": 83.42178401688732, 
+  "HasAns_total": 2910, 
+  "NoAns_exact": 71.62247474747475, 
+  "NoAns_f1": 71.62247474747475, 
+  "NoAns_total": 3168, 
+  "best_exact": 76.34090161237249, 
+  "best_exact_thresh": -26.965904235839844, 
+  "best_f1": 79.17271051315475, 
+  "best_f1_thresh": -24.478356897830963
+}
+
+# Threshold scores for BERT + CNN without highway connection
+{
+  "exact": 66.46923330042777, 
+  "f1": 72.67241206748663, 
+  "total": 6078, 
+  "HasAns_exact": 60.0, 
+  "HasAns_f1": 72.95633008459943, 
+  "HasAns_total": 2910, 
+  "NoAns_exact": 72.41161616161617, 
+  "NoAns_f1": 72.41161616161617, 
+  "NoAns_total": 3168, 
+  "best_exact": 68.97005593945377, 
+  "best_exact_thresh": -10.598368883132935, 
+  "best_f1": 74.01762203689894, 
+  "best_f1_thresh": -6.945757150650024
+}
+
+# Threshold scores for BERT + CNN with highway connection
+{
+  "exact": 76.25863770977296, 
+  "f1": 79.65622468964212, 
+  "total": 6078, 
+  "HasAns_exact": 77.42268041237114, 
+  "HasAns_f1": 84.5190837332114, 
+  "HasAns_total": 2910, 
+  "NoAns_exact": 75.18939393939394, 
+  "NoAns_f1": 75.18939393939394, 
+  "NoAns_total": 3168, 
+  "best_exact": 78.00263244488319, 
+  "best_exact_thresh": -9.801985181868076, 
+  "best_f1": 81.06310918389102, 
+  "best_f1_thresh": -5.914348542690277
+}
+
+
 # BERT SCORES
 # BERT LARGE
 Submission successful
@@ -197,6 +250,34 @@ EM: 77.279 (-1.859)
 F1: 80.275 (-1.324)
 
 # BERT LARGE WITH MAX QUERY of 256, MAX_SEQ of 512, AND MAX ANSWER LEN OF 256 and no answer tuning
+Submission successful
+Scores (Improvement): 
+EM: 79.056 (-0.082) 
+F1: 81.551 (-0.048)
+
+# BERT LARGE OPTIMIZED PARAMETERS
+Submission successful
+Scores (Improvement): 
+EM: 73.511 (-5.627) 
+F1: 77.272 (-4.327)
+
+# BERT LARGE CNN without highway connection
+Submission successful
+Scores (Improvement): 
+EM: 66.469 (-12.669) 
+F1: 72.672 (-8.927)
+
+# BERT LARGE CNN with highway connection
+Submission successful
+Scores (Improvement): 
+EM: 76.259 (-2.879) 
+F1: 79.656 (-1.943)
+
+# BERT LARGE CNN with highway connection and no answer tuning
+Submission successful
+Scores (Improvement): 
+EM: 77.772 (-1.366) 
+F1: 81.047 (-0.552)
 
 
 
@@ -206,7 +287,14 @@ F1: 80.275 (-1.324)
 python count_lengths.py --json_file /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/train_small.json
 
 
-
+# count_lengths output
+Number of examples: 130571.
+Number of sequences that exceeded max_seq_len of 384 is 1625.
+Number of queries that exceeded max_query_len of 64 is 0.
+Number of answers that exceeded max_answer_len of 30 is 152.
+Max seq length found was 512.
+Max query length found was 63.
+Max answer length found was 67.
 
 export squad_dir=~/hugface/hugface/pytorch-pretrained-BERT/data
 
