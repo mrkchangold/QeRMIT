@@ -23,6 +23,26 @@ mv = move/rename
 python train.py   --bert_model bert-base-uncased   --do_train   --do_predict   --do_lower_case   --train_file ./data/train-v2.0.json   --predict_file ./data/dev-v2.0.json   --train_batch_size 12   --learning_rate 3e-5   --num_train_epochs 2.0   --max_seq_length 384   --doc_stride 128   --output_dir ./tmp/debug_squad/ --version_2_with_negative
 
 
+##### example of incorrect triviaqa answer missing one letter. Since triviaqa has multiple ##### answers, our code takes the first answer that is also found in the provided documents.
+
+These failures demoralised the conspirators",
+                    "qas": [
+                        {
+                            "answers": [
+                                {
+                                    "answer_start": 53,
+                                    "text": "adolf hitle"
+                                }
+                            ],
+                            "id": "jp_1022--20_July_plot.txt",
+                            "is_impossible": false,
+                            "qid": "jp_1022",
+                            "question": "Who did Claus von Stauffenberg plot to kill?"
+                        }
+                    ]
+                }
+            ]
+        },
 
 
 
@@ -61,6 +81,15 @@ export output_dir=~/models_squad
 
 python run_squad.py --bert_model bert-base-uncased --do_train --do_predict --do_lower_case --train_file $squad_dir/train-v2.0.json --predict_file $squad_dir/dev-v2.0.json --learning_rate 3e-4 --num_train_epochs 2.0 --max_seq_length 384 --doc_stride 128 --output_dir $output_dir/debug_squad_baseline_03092019_cls --train_batch_size 24 --gradient_accumulation_steps 4 --version_2_with_negative --new_model --cache_example --model3 &> train_cls_output.txt
 
+# convert triviaQA to Squad
+python convert_to_squad_format.py --triviaqa_file /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/qa/wikipedia-train.json --squad_file /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/squad/squad-wikipedia-train.json --wikipedia_dir /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/evidence/wikipedia/ --web_dir /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/evidence/web/
+
+python convert_to_squad_format.py --triviaqa_file /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/qa/wikipedia-dev.json --squad_file /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/squad/squad-wikipedia-dev.json --wikipedia_dir /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/evidence/wikipedia/ --web_dir /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/evidence/web/
+
+python convert_to_squad_format.py --triviaqa_file /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/qa/web-train.json --squad_file /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/squad/squad-web-train.json --wikipedia_dir /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/evidence/wikipedia/ --web_dir /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/evidence/web/ --sample_size 999999
+
+python convert_to_squad_format.py --triviaqa_file /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/qa/web-dev.json --squad_file /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/squad/squad-web-dev.json --wikipedia_dir /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/evidence/wikipedia/ --web_dir /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/triviaqa-rc/evidence/web/ --sample_size 999999
+
 #cls model Bert base f1 and em scores
 Submission successful
 Scores (Improvement): 
@@ -78,6 +107,13 @@ fileutil cp -R /cns/os-d/home/diai/public/bert_output/squadv2.0/train_default_v2
 #transfer files from desktop to laptop
 scp -r diai@diai.mtv.corp.google.com:~/Desktop/models_squad/train_default_v2/ /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/submission_files/bert_large
 
+# move triviaqa squad files to corp
+scp -r /Users/diai/Documents/CS_224N_NLP/Project/QeRMIT/pytorch-pretrained-BERT/data/triviaqa/squad/ diai@diai.mtv.corp.google.com:~/Desktop/models_squad/triviaqa/data/
+
+fileutil rm -R /cns/os-d/home/diai/public/bert_input/triviaqa/
+fileutil mkdir /cns/os-d/home/diai/public/bert_input/triviaqa/
+fileutil cp -R ~/Desktop/models_squad/triviaqa/data/ /cns/os-d/home/diai/public/bert_input/triviaqa/
+
 
 # Google Borg Commands to run BERT on TPU
 g4d tensorflow_tpu
@@ -89,7 +125,7 @@ allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/goog
 alias output_dir='~/Desktop/models_squad/train_default_v2'
 python ~/Desktop/lumiere/squad/evaluate-v2.0.py ~/Desktop/models_squad/data/dev-v2.0.json ~/Desktop/models_squad/train_default_v2/predictions.json --na-prob-file ~/Desktop/models_squad/train_default_v2/null_odds.json
 # Get predictions with new threshold like this:
-allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/google/train_squad_tpu.borg reload --vars=exp_name=train_default_v2,version_2_with_negative=true,do_train=false,null_score_diff_threshold=-5.914348542690277
+allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/google/train_squad_tpu.borg reload --vars=exp_name=train_default_v2,version_2_with_negative=true,do_train=false,null_score_diff_threshold=-7.41866934299469
 
 
 # threshold scores on original dev set.
@@ -211,6 +247,73 @@ allocator_borgcfg --skip_confirmation experimental/users/diai/language/bert/goog
   "best_f1_thresh": -5.914348542690277
 }
 
+# Threshold scores for BERT + Triviaqa wikipedia train
+{
+  "exact": 74.11977624218493, 
+  "f1": 77.2407404072085, 
+  "total": 6078, 
+  "HasAns_exact": 76.08247422680412, 
+  "HasAns_f1": 82.60110659622477, 
+  "HasAns_total": 2910, 
+  "NoAns_exact": 72.3169191919192, 
+  "NoAns_f1": 72.3169191919192, 
+  "NoAns_total": 3168, 
+  "best_exact": 76.02829878249425, 
+  "best_exact_thresh": -7.6794679164886475, 
+  "best_f1": 78.54503479179961, 
+  "best_f1_thresh": -6.512840390205383
+}
+
+# Threshold scores for BERT + triviaqa wikipedia web train
+{
+  "exact": 73.80717341230668, 
+  "f1": 76.94066446373698, 
+  "total": 6078, 
+  "HasAns_exact": 75.05154639175258, 
+  "HasAns_f1": 81.59634316515275, 
+  "HasAns_total": 2910, 
+  "NoAns_exact": 72.66414141414141, 
+  "NoAns_f1": 72.66414141414141, 
+  "NoAns_total": 3168, 
+  "best_exact": 75.3372820006581, 
+  "best_exact_thresh": -6.613004446029663, 
+  "best_f1": 77.89214274157767, 
+  "best_f1_thresh": -4.429660439491272
+}
+
+# Threshold scores for BERT + triviaqa wikipedia web train dev
+{
+  "exact": 72.40868706811452, 
+  "f1": 75.70639043799655, 
+  "total": 6078, 
+  "HasAns_exact": 74.7766323024055, 
+  "HasAns_f1": 81.6644127430047, 
+  "HasAns_total": 2910, 
+  "NoAns_exact": 70.23358585858585, 
+  "NoAns_f1": 70.23358585858585, 
+  "NoAns_total": 3168, 
+  "best_exact": 74.54754853570253, 
+  "best_exact_thresh": -9.40640652179718, 
+  "best_f1": 77.13321488209556, 
+  "best_f1_thresh": -7.41866934299469
+}
+
+# Threshold scores for BERT CNN v2 on squad train set
+{
+  "exact": 75.20565975649885, 
+  "f1": 78.62080157028791, 
+  "total": 6078, 
+  "HasAns_exact": 76.3573883161512, 
+  "HasAns_f1": 83.49045771278716, 
+  "HasAns_total": 2910, 
+  "NoAns_exact": 74.14772727272727, 
+  "NoAns_f1": 74.14772727272727, 
+  "NoAns_total": 3168, 
+  "best_exact": 77.24580454096743, 
+  "best_exact_thresh": -11.776367545127869, 
+  "best_f1": 79.98001613903898, 
+  "best_f1_thresh": -11.776367545127869
+}
 
 # BERT SCORES
 # BERT LARGE
@@ -279,8 +382,44 @@ Scores (Improvement):
 EM: 77.772 (-1.366) 
 F1: 81.047 (-0.552)
 
+# BERT LARGE with wikipedia train
+Submission successful
+Scores (Improvement): 
+EM: 74.120 (-5.018) 
+F1: 77.241 (-4.358)
 
+# BERT LARGE with wikipedia and web train
+Submission successful
+Scores (Improvement): 
+EM: 73.807 (-5.331) 
+F1: 76.941 (-4.658)
 
+# BERT LARGE with wikipedia and web train and dev
+Submission successful
+Scores (Improvement): 
+EM: 72.409 (-6.729) 
+F1: 75.706 (-5.893)
+
+# BERT LARGE BASELINE TEST
+Submission successful
+Scores (Improvement): 
+EM: 72.308 (+72.308) 
+F1: 76.294 (+76.294) 
+1/3 submissions used
+
+# BERT LARGE with triviaqa wikipedia and web train and dev TEST
+Submission successful
+Scores (Improvement): 
+EM: 69.687 (-2.620) 
+F1: 72.690 (-3.604) 
+2/3 submissions used
+
+# BERT LARGE CNN v2 TEST
+Submission successful
+Scores (Improvement): 
+EM: 72.730 (+0.423) 
+F1: 75.748 (-0.546) 
+3/3 submissions used
 
 
 # count_lengths.py python file run flags/commands/arguments
